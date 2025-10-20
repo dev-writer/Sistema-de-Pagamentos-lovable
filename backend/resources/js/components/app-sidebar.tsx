@@ -13,7 +13,7 @@ import {
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid } from 'lucide-react';
+import { Banknote, BookOpen, BriefcaseBusinessIcon, ClipboardListIcon, CreditCard, Folder, LayoutGrid, Users } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -22,6 +22,36 @@ const mainNavItems: NavItem[] = [
         href: dashboard(),
         icon: LayoutGrid,
     },
+
+    {
+        title: 'Contas',
+        href: '/contas',
+        icon: Users,
+    },
+
+    {
+        title: 'Credores',
+        href: '/credores',
+        icon: BriefcaseBusinessIcon,
+    },
+
+    {
+        title: 'Pagamentos',
+        href: '/payments',
+        icon: CreditCard,
+    },
+
+    {
+        title: 'Transferências',
+        href: '/accounttransfers',
+        icon: Banknote,
+    },
+
+    {
+        title: 'Relatório de pagamentos',
+        href: '/paymentsreports',
+        icon: ClipboardListIcon,
+    }
 ];
 
 const footerNavItems: NavItem[] = [

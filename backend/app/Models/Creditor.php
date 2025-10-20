@@ -6,7 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Creditor extends Model
 {
-    //
+    protected $table = 'creditors';
+    
     protected $fillable = [
         'name',
         'cpf_cnpj',
