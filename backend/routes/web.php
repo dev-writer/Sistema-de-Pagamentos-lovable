@@ -2,6 +2,17 @@
 
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Http\Controllers\AccountController;
+use App\Http\Controllers\CreditorController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\AccountTransferController;
+
+
+Route::apiResource('accounts', AccountController::class);
+Route::apiResource('creditors', CreditorController::class);
+Route::apiResource('payments', PaymentController::class);
+Route::apiResource('transfers', AccountTransferController::class);
+
 
 Route::get('/', function () {
     return Inertia::render('welcome');

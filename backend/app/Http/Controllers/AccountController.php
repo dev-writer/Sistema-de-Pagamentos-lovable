@@ -10,11 +10,10 @@ class AccountController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
-        $accounts = Account::all();
-        // return view('accounts.index', compact('accounts'));
+        $accounts = Account::orderBy('created_at', 'desc')->get();
+        return response()->json($accounts);
     }
 
     /**
@@ -32,8 +31,8 @@ class AccountController extends Controller
      public function store(Request $request)
     {
         $data = $request->validate([
-            'number' => 'required|string',
-            'name' => 'required|string',
+            'number' => 'required|string|max:255|unique:accounts,number',
+            'name' => 'required|string|max:255',
             'initial_balance' => 'required|numeric',
         ]);
 

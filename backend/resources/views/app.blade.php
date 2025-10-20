@@ -15,6 +15,7 @@
 
                     if (prefersDark) {
                         document.documentElement.classList.add('dark');
+        
                     }
                 }
             })();

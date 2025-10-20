@@ -13,14 +13,11 @@ return new class extends Migration
     {
         Schema::create('account_transfers', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('from_account_id');
-            $table->unsignedBigInteger('to_account_id');
+            $table->foreignId('from_account_id')->constrained('accounts')->onDelete('cascade');
+            $table->foreignId('to_account_id')->constrained('accounts')->onDelete('cascade');
             $table->decimal('amount', 15, 2);
-            $table->timestamp('transferred_at')->useCurrent();
+            $table->string('description')->nullable();
             $table->timestamps();
-
-            $table->foreign('from_account_id')->references('id')->on('accounts')->onDelete('cascade');
-            $table->foreign('to_account_id')->references('id')->on('accounts')->onDelete('cascade');
         });
     }
 
