@@ -11,30 +11,46 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ArrowLeftRight, Trash2 } from "lucide-react";
 import AppLayout from "@/layouts/app-layout";
 
-const ACCOUNTS_KEY = "accounts";
-const TRANSFERS_KEY = "transfers";
-const TRANSACTIONS_KEY = "accountTransactions";
-
 const AccountTransfers = () => {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [transfers, setTransfers] = useState<Transfer[]>([]);
-  const [transactions, setTransactions] = useState<AccountTransaction[]>([]);
   const [fromAccountId, setFromAccountId] = useState<string>("");
   const [toAccountId, setToAccountId] = useState<string>("");
   const [amount, setAmount] = useState<string>("");
   const [description, setDescription] = useState<string>("");
 
+  // Carregar contas e transferências do servidor
   useEffect(() => {
-    const storedAccounts = localStorage.getItem(ACCOUNTS_KEY);
-    const storedTransfers = localStorage.getItem(TRANSFERS_KEY);
-    const storedTransactions = localStorage.getItem(TRANSACTIONS_KEY);
+    const loadData = async () => {
+      try {
+        const [accountsRes, transfersRes] = await Promise.all([
+          fetch('/accounts'),
+          fetch('/transfers')
+        ]);
 
-    if (storedAccounts) setAccounts(JSON.parse(storedAccounts));
-    if (storedTransfers) setTransfers(JSON.parse(storedTransfers));
-    if (storedTransactions) setTransactions(JSON.parse(storedTransactions));
+        if (accountsRes.ok) {
+          const accountsData = await accountsRes.json();
+          setAccounts(accountsData);
+        }
+
+        if (transfersRes.ok) {
+          const transfersData = await transfersRes.json();
+          setTransfers(transfersData);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar dados:', error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar os dados",
+          variant: "destructive",
+        });
+      }
+    };
+
+    loadData();
   }, []);
 
-  const handleTransfer = () => {
+  const handleTransfer = async () => {
     if (!fromAccountId || !toAccountId || !amount || parseFloat(amount) <= 0) {
       toast({
         title: "Erro",
@@ -44,112 +60,102 @@ const AccountTransfers = () => {
       return;
     }
 
-    if (fromAccountId === toAccountId) {
+    try {
+      const res = await fetch('/transfers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+        },
+        body: JSON.stringify({
+          from_account_id: fromAccountId,
+          to_account_id: toAccountId,
+          amount: parseFloat(amount),
+          description: description || 'Transferência entre contas',
+        }),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || 'Erro ao realizar transferência');
+      }
+
+      const savedTransfer = await res.json();
+      
+      // Atualiza lista de transferências
+      setTransfers(prev => [savedTransfer, ...prev]);
+      
+      // Atualiza saldos das contas
+      setAccounts(prev => prev.map(account => {
+        if (account.id === fromAccountId) {
+          return { ...account, currentBalance: account.currentBalance - parseFloat(amount) };
+        }
+        if (account.id === toAccountId) {
+          return { ...account, currentBalance: account.currentBalance + parseFloat(amount) };
+        }
+        return account;
+      }));
+
+      // Limpa form
+      setFromAccountId("");
+      setToAccountId("");
+      setAmount("");
+      setDescription("");
+
+      toast({
+        title: "Transferência realizada!",
+        description: "Os saldos foram atualizados com sucesso.",
+      });
+
+    } catch (error: any) {
       toast({
         title: "Erro",
-        description: "Selecione contas diferentes.",
+        description: error.message || "Não foi possível realizar a transferência",
         variant: "destructive",
       });
-      return;
     }
-
-    const fromAccount = accounts.find((a) => a.id === fromAccountId);
-    if (!fromAccount || fromAccount.currentBalance < parseFloat(amount)) {
-      toast({
-        title: "Saldo insuficiente",
-        description: "A conta de origem não possui saldo suficiente.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const transfer: Transfer = {
-      id: Date.now().toString(),
-      fromAccountId,
-      toAccountId,
-      amount: parseFloat(amount),
-      description: description || 'Transferência entre contas',
-      createdAt: new Date().toISOString(),
-    };
-
-    const transactionOut: AccountTransaction = {
-      id: `${Date.now()}-out`,
-      accountId: fromAccountId,
-      type: 'transfer_out',
-      amount: parseFloat(amount),
-      description: description || 'Transferência enviada',
-      relatedAccountId: toAccountId,
-      createdAt: new Date().toISOString(),
-    };
-
-    const transactionIn: AccountTransaction = {
-      id: `${Date.now()}-in`,
-      accountId: toAccountId,
-      type: 'transfer_in',
-      amount: parseFloat(amount),
-      description: description || 'Transferência recebida',
-      relatedAccountId: fromAccountId,
-      createdAt: new Date().toISOString(),
-    };
-
-    const updatedAccounts = accounts.map((account) => {
-      if (account.id === fromAccountId) {
-        return { ...account, currentBalance: account.currentBalance - parseFloat(amount) };
-      }
-      if (account.id === toAccountId) {
-        return { ...account, currentBalance: account.currentBalance + parseFloat(amount) };
-      }
-      return account;
-    });
-
-    const updatedTransfers = [transfer, ...transfers];
-    const updatedTransactions = [transactionIn, transactionOut, ...transactions];
-
-    setAccounts(updatedAccounts);
-    setTransfers(updatedTransfers);
-    setTransactions(updatedTransactions);
-    
-    localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(updatedAccounts));
-    localStorage.setItem(TRANSFERS_KEY, JSON.stringify(updatedTransfers));
-    localStorage.setItem(TRANSACTIONS_KEY, JSON.stringify(updatedTransactions));
-
-    setFromAccountId("");
-    setToAccountId("");
-    setAmount("");
-    setDescription("");
-
-    toast({
-      title: "Transferência realizada!",
-      description: "Os saldos foram atualizados com sucesso.",
-    });
   };
 
-  const handleDelete = (id: string) => {
-    const transfer = transfers.find((t) => t.id === id);
-    if (!transfer) return;
+  const handleDelete = async (id: string) => {
+    if (!confirm('Tem certeza que deseja reverter esta transferência?')) {
+      return;
+    }
 
-    const updatedAccounts = accounts.map((account) => {
-      if (account.id === transfer.fromAccountId) {
-        return { ...account, currentBalance: account.currentBalance + transfer.amount };
+    try {
+      const res = await fetch(`/transfers/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error('Erro ao reverter transferência');
       }
-      if (account.id === transfer.toAccountId) {
-        return { ...account, currentBalance: account.currentBalance - transfer.amount };
+
+      // Remove da lista
+      setTransfers(prev => prev.filter(t => t.id !== id));
+      
+      // Recarrega contas para ter saldos atualizados
+      const accountsRes = await fetch('/accounts');
+      if (accountsRes.ok) {
+        const accountsData = await accountsRes.json();
+        setAccounts(accountsData);
       }
-      return account;
-    });
 
-    const updatedTransfers = transfers.filter((t) => t.id !== id);
+      toast({
+        title: "Transferência revertida",
+        description: "A transferência foi excluída e os saldos atualizados.",
+        variant: "destructive",
+      });
 
-    setAccounts(updatedAccounts);
-    setTransfers(updatedTransfers);
-    localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(updatedAccounts));
-    localStorage.setItem(TRANSFERS_KEY, JSON.stringify(updatedTransfers));
-
-    toast({
-      title: "Transferência excluída",
-      description: "A transferência foi revertida com sucesso.",
-      variant: "destructive",
-    });
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: error.message || "Não foi possível reverter a transferência",
+        variant: "destructive",
+      });
+    }
   };
 
   const getAccountName = (accountId: string) => {
