@@ -18,13 +18,12 @@ const PAYMENTS_KEY = "payments";
 const ACCOUNTS_KEY = "accounts";
 
 const CreditorDashboard = () => {
-  const { creditorId } = useParams<{ creditorId: string }>();
   const navigate = useNavigate();
   const [creditors, setCreditors] = useState<Creditor[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
 
-  const creditor = creditors.find((c) => c.id === creditorId);
+  const creditor = creditors.length > 0 ? creditors[0] : null;
 
   useEffect(() => {
     const storedCreditors = localStorage.getItem(CREDITORS_KEY);
@@ -47,7 +46,7 @@ const CreditorDashboard = () => {
     }
   }, [creditors, creditor, navigate]);
 
-  const creditorPayments = payments.filter((p) => p.creditorId === creditorId);
+  const creditorPayments = payments.filter((p) => p.creditorId === creditor?.id);
   
   const totalReceived = creditorPayments.reduce((sum, p) => sum + p.netAmount, 0);
   const totalGross = creditorPayments.reduce((sum, p) => sum + p.grossAmount, 0);
@@ -149,7 +148,7 @@ const CreditorDashboard = () => {
                         <TableCell>
                           {new Date(payment.date).toLocaleDateString('pt-BR')}
                         </TableCell>
-                        <TableCell>{getAccountInfo(payment.accountId)}</TableCell>
+                        <TableCell>{getAccountInfo(payment.accountId.toString())}</TableCell>
                         <TableCell className="text-right">
                           R$ {payment.grossAmount.toFixed(2)}
                         </TableCell>

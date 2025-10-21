@@ -17,13 +17,24 @@ import {
 import { Trash2, BarChart3 } from "lucide-react";
 import AppLayout from "@/layouts/app-layout";
 
-const STORAGE_KEY = "creditors";
+const getApiBase = () => {
+  let API_BASE = window.location.origin || "http://localhost:8000";
+  try {
+    const meta = (import.meta as any)?.env;
+    if (meta?.VITE_API_URL) API_BASE = meta.VITE_API_URL;
+  } catch (e) {
+    //
+  }
+  if ((window as any).__API_BASE) API_BASE = (window as any).__API_BASE;
+  return API_BASE.replace(/\/$/, "");
+};
 
-
+const API_URL = `${getApiBase()}/creditors`;
 
 const Creditors = () => {
-
   const [creditors, setCreditors] = useState<Creditor[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [submitting, setSubmitting] = useState<boolean>(false);
 
   const {
     register,
@@ -38,43 +49,107 @@ const Creditors = () => {
   });
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
+    const fetchCreditors = async () => {
+      setLoading(true);
       try {
-        setCreditors(JSON.parse(stored));
-      } catch (error) {
-        console.error("Error loading creditors:", error);
+        const res = await fetch(API_URL, {
+          headers: { Accept: "application/json" },
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        setCreditors(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Error loading creditors:", err);
+        toast({
+          title: "Erro ao carregar credores",
+          description:
+            "Verifique se o backend está rodando e as rotas /creditors existem.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
       }
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(creditors));
-  }, [creditors]);
-
-  const onSubmit = (data: CreditorFormData) => {
-    const creditor: Creditor = {
-      id: Date.now().toString(),
-      name: data.name,
-      document: data.document,
-      createdAt: new Date().toISOString(),
     };
 
-    setCreditors((prev) => [creditor, ...prev]);
-    reset();
-    toast({
-      title: "Credor cadastrado!",
-      description: "O credor foi adicionado com sucesso.",
-    });
+    fetchCreditors();
+  }, []);
+
+  const onSubmit = async (data: CreditorFormData) => {
+    setSubmitting(true);
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          name: data.name,
+          document: data.document,
+          _token: (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
+        }),
+      });
+
+      if (res.status === 422) {
+        const body = await res.json() as { errors?: Record<string, string[]> };
+        const first = body?.errors
+          ? Object.values(body.errors)[0][0]
+          : "Erro de validação";
+        toast({
+          title: "Erro de validação",
+          description: first,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const created: Creditor = await res.json();
+      setCreditors((prev) => [created, ...prev]);
+      reset();
+      toast({
+        title: "Credor cadastrado!",
+        description: "O credor foi adicionado com sucesso.",
+      });
+    } catch (err) {
+      console.error("Error creating creditor:", err);
+      toast({
+        title: "Erro",
+        description:
+          "Não foi possível cadastrar o credor. Confirme o backend e as rotas.",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleDelete = (id: string) => {
-    setCreditors((prev) => prev.filter((c) => c.id !== id));
-    toast({
-      title: "Credor excluído",
-      description: "O credor foi removido com sucesso.",
-      variant: "destructive",
-    });
+  const handleDelete = async (id: string) => {
+    if (!confirm("Confirma exclusão do credor?")) return;
+    try {
+      const res = await fetch(`${API_URL}/${id}`, {
+        method: "DELETE",
+        headers: {
+          Accept: "application/json",
+        },
+      });
+      if (!(res.status === 200 || res.status === 204))
+        throw new Error(`HTTP ${res.status}`);
+      setCreditors((prev) => prev.filter((c) => c.id !== id));
+      toast({
+        title: "Credor excluído",
+        description: "O credor foi removido com sucesso.",
+        variant: "destructive",
+      });
+    } catch (err) {
+      console.error("Error deleting creditor:", err);
+      toast({
+        title: "Erro",
+        description: "Não foi possível excluir o credor.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -99,7 +174,7 @@ const Creditors = () => {
                   <Input
                     id="name"
                     placeholder="Ex: João Silva"
-                    {...register("name")}
+                    {...register("name", { required: "Nome é obrigatório" })}
                     className="transition-smooth"
                   />
                   {errors.name && (
@@ -121,8 +196,12 @@ const Creditors = () => {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full transition-smooth">
-                Cadastrar Credor
+              <Button
+                type="submit"
+                className="w-full transition-smooth"
+                disabled={submitting}
+              >
+                {submitting ? "Enviando..." : "Cadastrar Credor"}
               </Button>
             </form>
           </CardContent>
@@ -133,7 +212,9 @@ const Creditors = () => {
             <CardTitle>Credores Cadastrados</CardTitle>
           </CardHeader>
           <CardContent>
-            {creditors.length === 0 ? (
+            {loading && creditors.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">Carregando...</p>
+            ) : creditors.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">
                 Nenhum credor cadastrado ainda.
               </p>
@@ -157,7 +238,9 @@ const Creditors = () => {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => navigate(`/creditor-dashboard/${creditor.id}`)}
+                              onClick={() =>
+                                (window as any).navigate?.(`/creditor-dashboard/${creditor.id}`)
+                              }
                               className="text-primary hover:text-primary hover:bg-primary/10"
                               title="Ver Dashboard"
                             >

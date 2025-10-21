@@ -1,13 +1,14 @@
 export interface Payment {
-  id: string;
+  id: number;
   date: string;
-  accountId: string;
-  creditorId: string;
+  accountId: number;
+  creditorId: number;
   grossAmount: number;
   taxRate: number;
   taxAmount: number;
   netAmount: number;
-  createdAt: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface PaymentFormData {

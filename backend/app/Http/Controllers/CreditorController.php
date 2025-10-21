@@ -5,63 +5,52 @@ namespace App\Http\Controllers;
 use App\Models\Creditor;
 use Illuminate\Http\Request;
 
-class CreditorController extends Controller
-{
+
     /**
      * Display a listing of the resource.
      */
+    class CreditorController extends Controller
+{
     public function index()
     {
-        //
+        return response()->json(Creditor::orderBy('created_at','desc')->get());
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
-        
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'document' => 'nullable|string|max:255',
+        ]);
+
+        $creditor = Creditor::create($data);
+
+        return response()->json($creditor, 201);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Creditor $creditor)
+    public function update(Request $request, $id)
     {
-        //
+        $creditor = Creditor::findOrFail($id);
+
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'document' => 'nullable|string|max:255',
+        ]);
+
+        $creditor->update($data);
+
+        return response()->json($creditor);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Creditor $creditor)
+    public function show($id)
     {
-        //
+        return response()->json(Creditor::findOrFail($id));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Creditor $creditor)
+    public function destroy($id)
     {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Creditor $creditor)
-    {
-        //
+        $c = Creditor::findOrFail($id);
+        $c->delete();
+        return response()->json(null, 204);
     }
 }

@@ -3,133 +3,88 @@
 namespace App\Http\Controllers;
 
 use App\Models\AccountTransfer;
+use App\Models\Account;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class AccountTransferController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('web');
+    }
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        $transfers = Transfer::with(['fromAccount', 'toAccount'])
-            ->orderBy('created_at', 'desc')
-            ->get();
-        
-        return response()->json($transfers);
+        return response()->json(AccountTransfer::orderBy('created_at', 'desc')->get());
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
         $data = $request->validate([
-            'from_account_id' => 'required|exists:accounts,id',
-            'to_account_id' => 'required|exists:accounts,id|different:from_account_id',
+            'from_account_id' => 'required|exists:accounts,id|different:to_account_id',
+            'to_account_id' => 'required|exists:accounts,id',
             'amount' => 'required|numeric|min:0.01',
             'description' => 'nullable|string|max:255',
         ]);
 
-        try {
-            DB::beginTransaction();
+        return DB::transaction(function () use ($data) {
+            $from = Account::lockForUpdate()->findOrFail($data['from_account_id']);
+            $to = Account::lockForUpdate()->findOrFail($data['to_account_id']);
 
-            $fromAccount = Account::findOrFail($data['from_account_id']);
-            $toAccount = Account::findOrFail($data['to_account_id']);
-
-            if ($fromAccount->current_balance < $data['amount']) {
-                throw new \Exception('Saldo insuficiente');
+            $amount = (float) $data['amount'];
+            if ($from->current_balance < $amount) {
+                return response()->json(['message' => 'Saldo insuficiente na conta de origem.'], 422);
             }
 
-            // Atualiza saldos
-            $fromAccount->current_balance -= $data['amount'];
-            $toAccount->current_balance += $data['amount'];
-            
-            $fromAccount->save();
-            $toAccount->save();
+            // cria transferência
+            $transfer = AccountTransfer::create([
+                'from_account_id' => $from->id,
+                'to_account_id' => $to->id,
+                'amount' => $amount,
+                'description' => $data['description'] ?? null,
+            ]);
 
-            // Cria transferência
-            $transfer = Transfer::create($data);
+            // atualiza saldos
+            $from->current_balance = $from->current_balance - $amount;
+            $to->current_balance = $to->current_balance + $amount;
+            $from->save();
+            $to->save();
 
-            DB::commit();
-
-            return response()->json($transfer->load(['fromAccount', 'toAccount']), 201);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'message' => $e->getMessage()
-            ], 422);
-        }
+            return response()->json($transfer, 201);
+        });
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(AccountTransfer $accountTransfer)
+    public function show($id)
     {
-        //
-        return $accountTransfer;
+        return response()->json(AccountTransfer::findOrFail($id));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(AccountTransfer $accountTransfer)
+    public function destroy($id)
     {
-        //
+        return DB::transaction(function () use ($id) {
+            $transfer = AccountTransfer::findOrFail($id);
 
-    }
+            $from = Account::lockForUpdate()->findOrFail($transfer->from_account_id);
+            $to = Account::lockForUpdate()->findOrFail($transfer->to_account_id);
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, AccountTransfer $accountTransfer)
-    {
-        //
-        $validated = $request->validate([
-            'from_account_id' => 'required|integer|exists:accounts,id',
-            'to_account_id' => 'required|integer|exists:accounts,id',
-            'amount' => 'required|numeric|min:0.01',
-            'transferred_at' => 'required|date',
-        ]);
-        $accountTransfer->update($validated);
-    }
+            // reverter saldos
+            $from->current_balance = $from->current_balance + $transfer->amount;
+            $to->current_balance = $to->current_balance - $transfer->amount;
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Transfer $transfer)
-    {
-        try {
-            DB::beginTransaction();
+            // valida se to tem saldo suficiente para subtrair (opcional)
+            if ($to->current_balance < 0) {
+                return response()->json(['message' => 'Não é possível reverter: saldo da conta destino ficaria negativo.'], 422);
+            }
 
-            // Reverte saldos
-            $transfer->fromAccount->current_balance += $transfer->amount;
-            $transfer->toAccount->current_balance -= $transfer->amount;
-            
-            $transfer->fromAccount->save();
-            $transfer->toAccount->save();
-            
+            $from->save();
+            $to->save();
+
             $transfer->delete();
 
-            DB::commit();
             return response()->json(null, 204);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'message' => 'Erro ao reverter transferência'
-            ], 422);
-        }
+        });
     }
 }

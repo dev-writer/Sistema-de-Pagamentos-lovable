@@ -9,9 +9,8 @@ class Creditor extends Model
     //
     protected $fillable = [
         'name',
-        'cpf_cnpj',
-        'total_amount_owed',
+        'document',
     ];
 
-    
+
 }
