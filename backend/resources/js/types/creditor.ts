@@ -1,11 +1,11 @@
 export interface Creditor {
   id: string;
   name: string;
-  document: string;
+  cpf_cnpj: string;
   createdAt: string;
 }
 
 export interface CreditorFormData {
   name: string;
-  document: string;
+  cpf_cnpj: string;
 }

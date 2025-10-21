@@ -5,13 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class Transfer extends Model
+class AccountTransfer extends Model
 {
-<<<<<<< HEAD
     protected $table = 'accounts_transfer';
     
-=======
->>>>>>> main
     protected $fillable = [
         'from_account_id',
         'to_account_id',

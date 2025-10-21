@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useForm } from "react-hook-form";
@@ -16,13 +15,11 @@ import {
 } from "@/components/ui/table";
 import { Trash2, BarChart3 } from "lucide-react";
 import AppLayout from "@/layouts/app-layout";
+import React from "react";
 
 const STORAGE_KEY = "creditors";
 
-
-
 const Creditors = () => {
-
   const [creditors, setCreditors] = useState<Creditor[]>([]);
 
   const {
@@ -33,48 +30,146 @@ const Creditors = () => {
   } = useForm<CreditorFormData>({
     defaultValues: {
       name: "",
-      document: "",
+      cpf_cnpj: "",
     },
   });
 
+  // Tenta carregar do servidor; se falhar, usa localStorage como fallback
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
+    const load = async () => {
       try {
-        setCreditors(JSON.parse(stored));
-      } catch (error) {
-        console.error("Error loading creditors:", error);
+        const res = await fetch("/creditors", {
+          headers: { "X-Requested-With": "XMLHttpRequest" },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const list: Creditor[] = data.map((c: any) => ({
+            id: String(c.id),
+            name: c.name,
+            document: c.document ?? "",
+            createdAt: c.created_at ?? new Date().toISOString(),
+          }));
+          setCreditors(list);
+          return;
+        }
+      } catch (e) {
+        console.warn("Não foi possível carregar credores do servidor:", e);
       }
-    }
+
+      // fallback para localStorage
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        try {
+          setCreditors(JSON.parse(stored));
+        } catch (error) {
+          console.error("Error loading creditors:", error);
+        }
+      }
+    };
+    load();
   }, []);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(creditors));
   }, [creditors]);
 
-  const onSubmit = (data: CreditorFormData) => {
-    const creditor: Creditor = {
-      id: Date.now().toString(),
-      name: data.name,
-      document: data.document,
-      createdAt: new Date().toISOString(),
-    };
+  const getCsrfToken = () =>
+    (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement | null)
+      ?.content || "";
 
-    setCreditors((prev) => [creditor, ...prev]);
-    reset();
-    toast({
-      title: "Credor cadastrado!",
-      description: "O credor foi adicionado com sucesso.",
-    });
+  const navigate = (url: string) => {
+    window.location.href = url;
   };
 
-  const handleDelete = (id: string) => {
-    setCreditors((prev) => prev.filter((c) => c.id !== id));
-    toast({
-      title: "Credor excluído",
-      description: "O credor foi removido com sucesso.",
-      variant: "destructive",
-    });
+  // Envia para backend e atualiza lista com o registro retornado
+  const onSubmit = async (data: CreditorFormData) => {
+    const payload = {
+      name: data.name,
+      cpf_cnpj: data.cpf_cnpj || null,
+    };
+
+    try {
+      const res = await fetch("/creditors", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+          "X-CSRF-TOKEN": getCsrfToken(),
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.status === 422) {
+        const json = await res.json();
+        const msgs = json.errors
+          ? Object.values(json.errors).flat().join(" • ")
+          : "Dados inválidos";
+        throw new Error(msgs);
+      }
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || "Erro ao salvar");
+      }
+
+      const saved = await res.json();
+
+      const creditor: Creditor = {
+        id: String(saved.id ?? Date.now()),
+        name: saved.name,
+        cpf_cnpj: saved.cpf_cnpj ?? data.cpf_cnpj ?? "",
+        createdAt: saved.created_at ?? new Date().toISOString(),
+      };
+
+      setCreditors((prev) => [creditor, ...prev]);
+      reset();
+      toast({
+        title: "Credor cadastrado!",
+        description: "O credor foi adicionado com sucesso.",
+      });
+    } catch (error: any) {
+      console.error("Save error:", error);
+      toast({
+        title: "Erro",
+        description: error.message || "Não foi possível salvar o credor",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Tem certeza que deseja excluir este credor? Esta ação não pode ser desfeita.")) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/creditors/${id}`, {
+        method: "DELETE",
+        headers: {
+          "X-CSRF-TOKEN": getCsrfToken(),
+          "X-Requested-With": "XMLHttpRequest",
+        },
+      });
+
+      if (!res.ok && res.status !== 204) {
+        const text = await res.text();
+        throw new Error(text || "Erro ao excluir");
+      }
+
+      setCreditors((prev) => prev.filter((c) => c.id !== id));
+      toast({
+        title: "Credor excluído",
+        description: "O credor foi removido com sucesso.",
+        variant: "destructive",
+      });
+    } catch (error: any) {
+      console.error("Delete error:", error);
+      toast({
+        title: "Erro",
+        description: error.message || "Não foi possível excluir o credor",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -96,11 +191,11 @@ const Creditors = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Nome do Credor</Label>
-                  <Input
+                  <input
                     id="name"
                     placeholder="Ex: João Silva"
-                    {...register("name")}
-                    className="transition-smooth"
+                    {...register("name", { required: "Nome é obrigatório" })}
+                    className="transition-smooth w-full px-3 py-2 rounded border bg-transparent"
                   />
                   {errors.name && (
                     <p className="text-sm text-destructive">{errors.name.message}</p>
@@ -108,15 +203,15 @@ const Creditors = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="document">CPF/CNPJ</Label>
-                  <Input
-                    id="document"
+                  <Label htmlFor="cpf_cnpj">CPF/CNPJ</Label>
+                  <input
+                    id="cpf_cnpj"
                     placeholder="Ex: 123.456.789-00"
-                    {...register("document")}
-                    className="transition-smooth"
+                    {...register("cpf_cnpj")}
+                    className="transition-smooth w-full px-3 py-2 rounded border bg-transparent"
                   />
-                  {errors.document && (
-                    <p className="text-sm text-destructive">{errors.document.message}</p>
+                  {errors.cpf_cnpj && (
+                    <p className="text-sm text-destructive">{errors.cpf_cnpj.message}</p>
                   )}
                 </div>
               </div>
@@ -151,7 +246,7 @@ const Creditors = () => {
                     {creditors.map((creditor) => (
                       <TableRow key={creditor.id}>
                         <TableCell className="font-medium">{creditor.name}</TableCell>
-                        <TableCell>{creditor.document}</TableCell>
+                        <TableCell>{creditor.cpf_cnpj}</TableCell>
                         <TableCell>
                           <div className="flex gap-1">
                             <Button
