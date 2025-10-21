@@ -8,12 +8,11 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\AccountTransferController;
 
 
-Route::middleware(['web'])->group(function () {
-    Route::apiResource('accounts', AccountController::class);
-    Route::apiResource('creditors', CreditorController::class);
-    Route::apiResource('payments', PaymentController::class);
-    Route::apiResource('account-transfers', AccountTransferController::class);
-});
+Route::resource('accounts', AccountController::class);
+Route::resource('creditors', CreditorController::class);
+Route::resource('payments', PaymentController::class);
+Route::resource('transfers', AccountTransferController::class);
+
 
 Route::get('/', function () {
     return Inertia::render('welcome');
@@ -30,6 +29,7 @@ route::get('/dashboardcredor', function () {
 route::get('/credores', function () {
     return Inertia::render('Creditors');
 });
+
 route::get('/dashboardcontas', function () {
     return Inertia::render('Dashboard copy');
 });

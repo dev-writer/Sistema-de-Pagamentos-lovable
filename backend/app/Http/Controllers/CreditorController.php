@@ -13,44 +13,79 @@ use Illuminate\Http\Request;
 {
     public function index()
     {
-        return response()->json(Creditor::orderBy('created_at','desc')->get());
+        $creditors = Creditor::orderBy('created_at', 'desc')->get();
+        return response()->json($creditors);
     }
 
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create()
+    {
+        //
+
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
     public function store(Request $request)
     {
-        $data = $request->validate([
+         $data = $request->validate([
+            'cpf_cnpj' => 'required|string|max:255|unique:creditors,cpf_cnpj',
             'name' => 'required|string|max:255',
-            'document' => 'nullable|string|max:255',
+        ]);
+        
+        $creditors = Creditor::create([
+            'cpf_cnpj' => $data['cpf_cnpj'],
+            'name' => $data['name'],
+            'total_amount_owed' => 0,
         ]);
 
-        $creditor = Creditor::create($data);
-
-        return response()->json($creditor, 201);
+        return response()->json($creditors, 201);
     }
 
-    public function update(Request $request, $id)
+    /**
+     * Display the specified resource.
+     */
+    public function show(Creditor $creditor)
     {
-        $creditor = Creditor::findOrFail($id);
+        //
+    }
 
-        $data = $request->validate([
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(Creditor $creditor)
+    {
+        //
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, Creditor $creditor)
+    {
+         $request->validate([
+            'cpf_cnpj' => 'required|unique:creditors,cpf_cnpj,' . $creditor->id,
             'name' => 'required|string|max:255',
-            'document' => 'nullable|string|max:255',
+            'total_amount_owed' => 'required|numeric|min:0',
         ]);
 
-        $creditor->update($data);
-
-        return response()->json($creditor);
+        $creditor->cpf_cnpj = $request->input('cpf_cnpj');
+        $creditor->name = $request->input('name');
+        $creditor->total_amount_owed = $request->input('total_amount_owed');
+        $creditor->save();
     }
 
-    public function show($id)
-    {
-        return response()->json(Creditor::findOrFail($id));
-    }
-
+    /**
+     * Remove the specified resource from storage.
+     */
     public function destroy($id)
     {
-        $c = Creditor::findOrFail($id);
-        $c->delete();
-        return response()->json(null, 204);
+        $creditor = Creditor::findOrFail($id);
+        $creditor->delete();
+
+        return response()->json(['message' => 'Credor removido com sucesso.'], 200);
     }
 }

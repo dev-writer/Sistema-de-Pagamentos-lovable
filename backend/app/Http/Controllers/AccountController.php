@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Account;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class AccountController extends Controller
 {
@@ -49,9 +50,10 @@ class AccountController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Account $account)
+    public function show(Account $accounts, $id)
     {
-        //
+        $accounts = Account::with('Accounts')->findOrFail($id);
+            return Inertia::render('/Accounts', compact('accounts'));
 
     }
 

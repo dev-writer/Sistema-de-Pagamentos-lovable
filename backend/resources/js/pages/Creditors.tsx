@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useForm } from "react-hook-form";
@@ -16,20 +15,9 @@ import {
 } from "@/components/ui/table";
 import { Trash2, BarChart3 } from "lucide-react";
 import AppLayout from "@/layouts/app-layout";
+import React from "react";
 
-const getApiBase = () => {
-  let API_BASE = window.location.origin || "http://localhost:8000";
-  try {
-    const meta = (import.meta as any)?.env;
-    if (meta?.VITE_API_URL) API_BASE = meta.VITE_API_URL;
-  } catch (e) {
-    //
-  }
-  if ((window as any).__API_BASE) API_BASE = (window as any).__API_BASE;
-  return API_BASE.replace(/\/$/, "");
-};
-
-const API_URL = `${getApiBase()}/creditors`;
+const STORAGE_KEY = "creditors";
 
 const Creditors = () => {
   const [creditors, setCreditors] = useState<Creditor[]>([]);
@@ -44,109 +32,143 @@ const Creditors = () => {
   } = useForm<CreditorFormData>({
     defaultValues: {
       name: "",
-      document: "",
+      cpf_cnpj: "",
     },
   });
 
+  // Tenta carregar do servidor; se falhar, usa localStorage como fallback
   useEffect(() => {
-    const fetchCreditors = async () => {
-      setLoading(true);
+    const load = async () => {
       try {
-        const res = await fetch(API_URL, {
-          headers: { Accept: "application/json" },
+        const res = await fetch("/creditors", {
+          headers: { "X-Requested-With": "XMLHttpRequest" },
         });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        setCreditors(Array.isArray(data) ? data : []);
-      } catch (err) {
-        console.error("Error loading creditors:", err);
-        toast({
-          title: "Erro ao carregar credores",
-          description:
-            "Verifique se o backend está rodando e as rotas /creditors existem.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
+        if (res.ok) {
+          const data = await res.json();
+          const list: Creditor[] = data.map((c: any) => ({
+            id: String(c.id),
+            name: c.name,
+            document: c.document ?? "",
+            createdAt: c.created_at ?? new Date().toISOString(),
+          }));
+          setCreditors(list);
+          return;
+        }
+      } catch (e) {
+        console.warn("Não foi possível carregar credores do servidor:", e);
+      }
+
+      // fallback para localStorage
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        try {
+          setCreditors(JSON.parse(stored));
+        } catch (error) {
+          console.error("Error loading creditors:", error);
+        }
       }
     };
-
-    fetchCreditors();
+    load();
   }, []);
 
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(creditors));
+  }, [creditors]);
+
+  const getCsrfToken = () =>
+    (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement | null)
+      ?.content || "";
+
+  const navigate = (url: string) => {
+    window.location.href = url;
+  };
+
+  // Envia para backend e atualiza lista com o registro retornado
   const onSubmit = async (data: CreditorFormData) => {
-    setSubmitting(true);
+    const payload = {
+      name: data.name,
+      cpf_cnpj: data.cpf_cnpj || null,
+    };
+
     try {
-      const res = await fetch(API_URL, {
+      const res = await fetch("/creditors", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Accept: "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+          "X-CSRF-TOKEN": getCsrfToken(),
         },
-        body: JSON.stringify({
-          name: data.name,
-          document: data.document,
-          _token: (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (res.status === 422) {
-        const body = await res.json() as { errors?: Record<string, string[]> };
-        const first = body?.errors
-          ? Object.values(body.errors)[0][0]
-          : "Erro de validação";
-        toast({
-          title: "Erro de validação",
-          description: first,
-          variant: "destructive",
-        });
-        return;
+        const json = await res.json();
+        const msgs = json.errors
+          ? Object.values(json.errors).flat().join(" • ")
+          : "Dados inválidos";
+        throw new Error(msgs);
       }
 
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || "Erro ao salvar");
+      }
 
-      const created: Creditor = await res.json();
-      setCreditors((prev) => [created, ...prev]);
+      const saved = await res.json();
+
+      const creditor: Creditor = {
+        id: String(saved.id ?? Date.now()),
+        name: saved.name,
+        cpf_cnpj: saved.cpf_cnpj ?? data.cpf_cnpj ?? "",
+        createdAt: saved.created_at ?? new Date().toISOString(),
+      };
+
+      setCreditors((prev) => [creditor, ...prev]);
       reset();
       toast({
         title: "Credor cadastrado!",
         description: "O credor foi adicionado com sucesso.",
       });
-    } catch (err) {
-      console.error("Error creating creditor:", err);
+    } catch (error: any) {
+      console.error("Save error:", error);
       toast({
         title: "Erro",
-        description:
-          "Não foi possível cadastrar o credor. Confirme o backend e as rotas.",
+        description: error.message || "Não foi possível salvar o credor",
         variant: "destructive",
       });
-    } finally {
-      setSubmitting(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Confirma exclusão do credor?")) return;
+    if (!confirm("Tem certeza que deseja excluir este credor? Esta ação não pode ser desfeita.")) {
+      return;
+    }
+
     try {
-      const res = await fetch(`${API_URL}/${id}`, {
+      const res = await fetch(`/creditors/${id}`, {
         method: "DELETE",
         headers: {
-          Accept: "application/json",
+          "X-CSRF-TOKEN": getCsrfToken(),
+          "X-Requested-With": "XMLHttpRequest",
         },
       });
-      if (!(res.status === 200 || res.status === 204))
-        throw new Error(`HTTP ${res.status}`);
+
+      if (!res.ok && res.status !== 204) {
+        const text = await res.text();
+        throw new Error(text || "Erro ao excluir");
+      }
+
       setCreditors((prev) => prev.filter((c) => c.id !== id));
       toast({
         title: "Credor excluído",
         description: "O credor foi removido com sucesso.",
         variant: "destructive",
       });
-    } catch (err) {
-      console.error("Error deleting creditor:", err);
+    } catch (error: any) {
+      console.error("Delete error:", error);
       toast({
         title: "Erro",
-        description: "Não foi possível excluir o credor.",
+        description: error.message || "Não foi possível excluir o credor",
         variant: "destructive",
       });
     }
@@ -171,11 +193,11 @@ const Creditors = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Nome do Credor</Label>
-                  <Input
+                  <input
                     id="name"
                     placeholder="Ex: João Silva"
                     {...register("name", { required: "Nome é obrigatório" })}
-                    className="transition-smooth"
+                    className="transition-smooth w-full px-3 py-2 rounded border bg-transparent"
                   />
                   {errors.name && (
                     <p className="text-sm text-destructive">{errors.name.message}</p>
@@ -183,15 +205,15 @@ const Creditors = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="document">CPF/CNPJ</Label>
-                  <Input
-                    id="document"
+                  <Label htmlFor="cpf_cnpj">CPF/CNPJ</Label>
+                  <input
+                    id="cpf_cnpj"
                     placeholder="Ex: 123.456.789-00"
-                    {...register("document")}
-                    className="transition-smooth"
+                    {...register("cpf_cnpj")}
+                    className="transition-smooth w-full px-3 py-2 rounded border bg-transparent"
                   />
-                  {errors.document && (
-                    <p className="text-sm text-destructive">{errors.document.message}</p>
+                  {errors.cpf_cnpj && (
+                    <p className="text-sm text-destructive">{errors.cpf_cnpj.message}</p>
                   )}
                 </div>
               </div>
@@ -232,7 +254,7 @@ const Creditors = () => {
                     {creditors.map((creditor) => (
                       <TableRow key={creditor.id}>
                         <TableCell className="font-medium">{creditor.name}</TableCell>
-                        <TableCell>{creditor.document}</TableCell>
+                        <TableCell>{creditor.cpf_cnpj}</TableCell>
                         <TableCell>
                           <div className="flex gap-1">
                             <Button
