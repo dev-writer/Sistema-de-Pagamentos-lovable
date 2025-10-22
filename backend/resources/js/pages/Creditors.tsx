@@ -21,6 +21,8 @@ const STORAGE_KEY = "creditors";
 
 const Creditors = () => {
   const [creditors, setCreditors] = useState<Creditor[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [submitting, setSubmitting] = useState<boolean>(false);
 
   const {
     register,
@@ -30,7 +32,7 @@ const Creditors = () => {
   } = useForm<CreditorFormData>({
     defaultValues: {
       name: "",
-      cpf_cnpj: "",
+      document: "",
     },
   });
 
@@ -85,7 +87,7 @@ const Creditors = () => {
   const onSubmit = async (data: CreditorFormData) => {
     const payload = {
       name: data.name,
-      cpf_cnpj: data.cpf_cnpj || null,
+      document: data.document || null,
     };
 
     try {
@@ -117,7 +119,7 @@ const Creditors = () => {
       const creditor: Creditor = {
         id: String(saved.id ?? Date.now()),
         name: saved.name,
-        cpf_cnpj: saved.cpf_cnpj ?? data.cpf_cnpj ?? "",
+        document: saved.document ?? data.document ?? "",
         createdAt: saved.created_at ?? new Date().toISOString(),
       };
 
@@ -203,21 +205,25 @@ const Creditors = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="cpf_cnpj">CPF/CNPJ</Label>
+                  <Label htmlFor="document">CPF/CNPJ</Label>
                   <input
-                    id="cpf_cnpj"
+                    id="document"
                     placeholder="Ex: 123.456.789-00"
-                    {...register("cpf_cnpj")}
+                    {...register("document")}
                     className="transition-smooth w-full px-3 py-2 rounded border bg-transparent"
                   />
-                  {errors.cpf_cnpj && (
-                    <p className="text-sm text-destructive">{errors.cpf_cnpj.message}</p>
+                  {errors.document && (
+                    <p className="text-sm text-destructive">{errors.document.message}</p>
                   )}
                 </div>
               </div>
 
-              <Button type="submit" className="w-full transition-smooth">
-                Cadastrar Credor
+              <Button
+                type="submit"
+                className="w-full transition-smooth"
+                disabled={submitting}
+              >
+                {submitting ? "Enviando..." : "Cadastrar Credor"}
               </Button>
             </form>
           </CardContent>
@@ -228,7 +234,9 @@ const Creditors = () => {
             <CardTitle>Credores Cadastrados</CardTitle>
           </CardHeader>
           <CardContent>
-            {creditors.length === 0 ? (
+            {loading && creditors.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">Carregando...</p>
+            ) : creditors.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">
                 Nenhum credor cadastrado ainda.
               </p>
@@ -246,7 +254,7 @@ const Creditors = () => {
                     {creditors.map((creditor) => (
                       <TableRow key={creditor.id}>
                         <TableCell className="font-medium">{creditor.name}</TableCell>
-                        <TableCell>{creditor.cpf_cnpj}</TableCell>
+                        <TableCell>{creditor.document}</TableCell>
                         <TableCell>
                           <div className="flex gap-1">
                             <Button

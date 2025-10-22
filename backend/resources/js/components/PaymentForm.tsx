@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,16 +16,10 @@ import type { Payment, PaymentFormData } from "@/types/payment";
 import type { Account } from "@/types/account";
 import type { Creditor } from "@/types/creditor";
 
-const formSchema = z.object({
-  date: z.string().min(1, "Data é obrigatória"),
-  accountId: z.string().min(1, "Conta é obrigatória"),
-  creditorId: z.string().min(1, "Credor é obrigatório"),
-  grossAmount: z.string().min(1, "Valor bruto é obrigatório"),
-  taxRate: z.string().min(1, "Imposto é obrigatório"),
-});
+
 
 interface PaymentFormProps {
-  onSubmit: (payment: Payment) => void;
+  onSubmit: (payment: any) => void;
   accounts: Account[];
   creditors: Creditor[];
   onUpdateAccount: (accountId: string, newBalance: number) => void;
@@ -45,7 +37,6 @@ export function PaymentForm({ onSubmit, accounts, creditors, onUpdateAccount }: 
     setValue,
     formState: { errors },
   } = useForm<PaymentFormData>({
-    resolver: zodResolver(formSchema),
     defaultValues: {
       date: new Date().toISOString().split("T")[0],
       accountId: "",
@@ -71,9 +62,9 @@ export function PaymentForm({ onSubmit, accounts, creditors, onUpdateAccount }: 
 
   const accountId = watch("accountId");
 
-  const onSubmitForm = (data: PaymentFormData) => {
-    const selectedAccount = accounts.find((a) => a.id === data.accountId);
-    
+  const onSubmitForm = async (data: PaymentFormData) => {
+    const selectedAccount = accounts.find((a) => String(a.id) === data.accountId);
+
     if (!selectedAccount) {
       toast({
         title: "Erro",
@@ -83,41 +74,68 @@ export function PaymentForm({ onSubmit, accounts, creditors, onUpdateAccount }: 
       return;
     }
 
-    if (selectedAccount.currentBalance < netAmount) {
+    if ((selectedAccount.currentBalance || 0) < netAmount) {
       toast({
         title: "Saldo insuficiente",
-        description: `A conta não possui saldo suficiente. Saldo atual: R$ ${selectedAccount.currentBalance.toFixed(2)}`,
+        description: `A conta não possui saldo suficiente. Saldo atual: R$ ${(selectedAccount.currentBalance || 0).toFixed(2)}`,
         variant: "destructive",
       });
       return;
     }
 
-    const payment: Payment = {
-      id: Date.now().toString(),
-      date: data.date,
-      accountId: data.accountId,
-      creditorId: data.creditorId,
-      grossAmount: parseFloat(data.grossAmount),
-      taxRate: parseFloat(data.taxRate),
-      taxAmount,
-      netAmount,
-      createdAt: new Date().toISOString(),
+    const paymentData = {
+      account_id: parseInt(data.accountId),
+      creditor_id: parseInt(data.creditorId),
+      amount: netAmount,
+      gross_amount: parseFloat(data.grossAmount) || 0,
+      tax_rate: parseFloat(data.taxRate) || 0,
+      tax_amount: taxAmount || 0,
+      net_amount: netAmount || 0,
+      payment_date: data.date,
+      status: 'completed',
     };
 
-    onUpdateAccount(data.accountId, selectedAccount.currentBalance - netAmount);
-    onSubmit(payment);
-    reset({
-      date: new Date().toISOString().split("T")[0],
-      accountId: "",
-      creditorId: "",
-      grossAmount: "",
-      taxRate: "",
-    });
-    
-    toast({
-      title: "Pagamento registrado!",
-      description: "O pagamento foi adicionado com sucesso e o saldo foi atualizado.",
-    });
+    try {
+      const response = await fetch('/payments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(paymentData),
+      });
+
+      if (response.ok) {
+        const newPayment = await response.json();
+        onSubmit(newPayment);
+        onUpdateAccount(data.accountId, (selectedAccount.currentBalance || 0) - netAmount);
+        reset({
+          date: new Date().toISOString().split("T")[0],
+          accountId: "",
+          creditorId: "",
+          grossAmount: "",
+          taxRate: "",
+        });
+
+        toast({
+          title: "Pagamento registrado!",
+          description: "O pagamento foi adicionado com sucesso e o saldo foi atualizado.",
+        });
+      } else {
+        const errorData = await response.json();
+        toast({
+          title: "Erro",
+          description: errorData.message || "Erro ao registrar pagamento.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error creating payment:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao registrar pagamento.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -157,9 +175,9 @@ export function PaymentForm({ onSubmit, accounts, creditors, onUpdateAccount }: 
                     </SelectItem>
                   ) : (
                     accounts.map((account) => (
-                      <SelectItem key={account.id} value={account.id}>
+                      <SelectItem key={account.id} value={String(account.id)}>
                         {account.number} - {account.name} (Saldo: R${" "}
-                        {account.currentBalance.toFixed(2)})
+                        {account.currentBalance?.toFixed(2) || "0.00"})
                       </SelectItem>
                     ))
                   )}

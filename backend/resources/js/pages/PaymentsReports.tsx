@@ -14,7 +14,7 @@ import type { Creditor } from "@/types/creditor";
 import AppLayout from '@/layouts/app-layout';
 import { toast } from "@/hooks/use-toast";
 
-const PaymentReports = () => {
+const PaymentsReports = () => {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [creditors, setCreditors] = useState<Creditor[]>([]);
@@ -94,11 +94,11 @@ const PaymentReports = () => {
     return payments.filter((payment) => {
       const matchesAccount = selectedAccount === "all" || payment.accountId === selectedAccount;
       const matchesCreditor = selectedCreditor === "all" || payment.creditorId === selectedCreditor;
-      
+
       const paymentDate = new Date(payment.date);
       const matchesStartDate = !startDate || paymentDate >= startDate;
       const matchesEndDate = !endDate || paymentDate <= endDate;
-      
+
       return matchesAccount && matchesCreditor && matchesStartDate && matchesEndDate;
     });
   }, [payments, selectedAccount, selectedCreditor, startDate, endDate]);
@@ -294,4 +294,4 @@ const PaymentReports = () => {
   );
 };
 
-export default PaymentReports;
+export default PaymentsReports;

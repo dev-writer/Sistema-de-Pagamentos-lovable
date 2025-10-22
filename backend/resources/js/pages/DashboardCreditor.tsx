@@ -75,7 +75,7 @@ const CreditorDashboard = () => {
           </Button>
           <div>
             <h2 className="text-3xl font-bold tracking-tight">Dashboard - {creditor.name}</h2>
-            <p className="text-muted-foreground mt-2">CPF/CNPJ: {creditor.cpf_cnpj}</p>
+            <p className="text-muted-foreground mt-2">CPF/CNPJ: {creditor.document}</p>
           </div>
         </div>
 

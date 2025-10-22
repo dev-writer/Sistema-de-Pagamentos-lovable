@@ -121,10 +121,10 @@ const Accounts = () => {
         id: String(saved.id ?? Date.now()),
         number: saved.number,
         name: saved.name,
-        initialBalance:
+        initial_balance:
           parseFloat(saved.initial_balance) ?? parseFloat(data.initialBalance || "0"),
-        currentBalance:
-          parseFloat(saved.current_balance) ?? parseFloat(data.initialBalance || "0"),
+        current_balance:
+          parseFloat(saved.current_balance) ?? parseFloat(data.currentBalance || "0"),
         createdAt: saved.created_at ?? new Date().toISOString(),
       };
 
@@ -272,9 +272,9 @@ const Accounts = () => {
                       <TableRow key={account.id}>
                         <TableCell className="font-medium">{account.number}</TableCell>
                         <TableCell>{account.name}</TableCell>
-                        <TableCell>R$ {account.initialBalance.toFixed(2)}</TableCell>
+                        <TableCell>R$ {account.initial_balance.toFixed(2)}</TableCell>
                         <TableCell className="font-semibold">
-                          R$ {account.currentBalance.toFixed(2)}
+                          R$ {account.current_balance.toFixed(2)}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">

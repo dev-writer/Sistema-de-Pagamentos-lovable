@@ -37,7 +37,7 @@ const mainNavItems: NavItem[] = [
 
     {
         title: 'Pagamentos',
-        href: '/payments',
+        href: '/pagamentos',
         icon: CreditCard,
     },
 
@@ -48,8 +48,8 @@ const mainNavItems: NavItem[] = [
     },
 
     {
-        title: 'Relatório de pagamentos',
-        href: '/paymentsreports',
+        title: 'Relatório de Pagamentos',
+        href: '/pagamentos/relatorio',
         icon: ClipboardListIcon,
     }
 ];

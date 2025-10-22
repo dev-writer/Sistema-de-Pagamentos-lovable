@@ -83,7 +83,7 @@ const Dashboard = () => {
 
     const updatedAccounts = accounts.map((acc) =>
       acc.id === accountId
-        ? { ...acc, currentBalance: (acc.currentBalance ?? acc.initialBalance ?? 0) + parseFloat(amount) }
+        ? { ...acc, currentBalance: (acc.current_balance ?? acc.initial_balance ?? 0) + parseFloat(amount) }
         : acc
     );
 
@@ -115,8 +115,8 @@ const Dashboard = () => {
     return null;
   }
 
-  const initialBalance = parseFloat((account.initial_balance ?? account.initialBalance ?? 0) as any) || 0;
-  const currentBalance = parseFloat((account.current_balance ?? account.currentBalance ?? initialBalance) as any) || 0;
+  const initialBalance = parseFloat((account.initial_balance ?? account.initial_balance ?? 0) as any) || 0;
+  const currentBalance = parseFloat((account.current_balance ?? account.current_balance ?? initialBalance) as any) || 0;
 
   return (
     <AppLayout>

@@ -16,6 +16,10 @@ return new class extends Migration
             $table->unsignedBigInteger('account_id');
             $table->unsignedBigInteger('creditor_id');
             $table->decimal('amount', 15, 2);
+            $table->decimal('gross_amount', 15, 2)->nullable();
+            $table->decimal('tax_rate', 5, 2)->nullable();
+            $table->decimal('tax_amount', 15, 2)->nullable();
+            $table->decimal('net_amount', 15, 2)->nullable();
             $table->date('payment_date');
             $table->string('status')->default('pending'); // e.g., pending, completed, failed
             $table->timestamps();

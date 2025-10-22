@@ -6,11 +6,12 @@ use App\Models\Creditor;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
-class CreditorController extends Controller
-{
+
     /**
      * Display a listing of the resource.
      */
+    class CreditorController extends Controller
+{
     public function index()
     {
         $creditors = Creditor::orderBy('created_at', 'desc')->get();
@@ -69,13 +70,13 @@ class CreditorController extends Controller
      */
     public function update(Request $request, Creditor $creditor)
     {
-         $request->validate([
-            'cpf_cnpj' => 'required|unique:creditors,cpf_cnpj,' . $creditor->id,
+         $document->validate([
+            'document' => 'required|unique:creditors,document,' . $creditor->id,
             'name' => 'required|string|max:255',
             'total_amount_owed' => 'required|numeric|min:0',
         ]);
 
-        $creditor->cpf_cnpj = $request->input('cpf_cnpj');
+        $creditor->document = $request->input('document');
         $creditor->name = $request->input('name');
         $creditor->total_amount_owed = $request->input('total_amount_owed');
         $creditor->save();

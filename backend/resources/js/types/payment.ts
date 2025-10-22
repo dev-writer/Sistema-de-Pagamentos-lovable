@@ -7,7 +7,12 @@ export interface Payment {
   taxRate: number;
   taxAmount: number;
   netAmount: number;
+  created_at: string;
+  updated_at: string;
   createdAt: string;
+  amount: number;
+  description: string;
+  
 }
 
 export interface PaymentFormData {
@@ -16,4 +21,5 @@ export interface PaymentFormData {
   creditorId: string;
   grossAmount: string;
   taxRate: string;
+
 }

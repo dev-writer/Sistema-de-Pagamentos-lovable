@@ -35,7 +35,7 @@ route::get('/dashboard/account/{id}', [AccountController::class, 'show'])->name(
 route::get('/pagamentos', function () {
     return Inertia::render('Payments');
 });
-route::get('/pagamentosreport', function () {
+route::get('/pagamentos/relatorio', function () {
     return Inertia::render('PaymentsReports');
 });
 route::get('/notfound', function () {

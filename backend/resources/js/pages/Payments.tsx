@@ -8,73 +8,148 @@ import type { Creditor } from "@/types/creditor";
 import { toast } from "@/hooks/use-toast";
 
 
-const PAYMENTS_KEY = "payments";
-const ACCOUNTS_KEY = "accounts";
-const CREDITORS_KEY = "creditors";
-
 const Payments = () => {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [creditors, setCreditors] = useState<Creditor[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedPayments = localStorage.getItem(PAYMENTS_KEY);
-    const storedAccounts = localStorage.getItem(ACCOUNTS_KEY);
-    const storedCreditors = localStorage.getItem(CREDITORS_KEY);
-
-    if (storedPayments) {
+    const fetchData = async () => {
       try {
-        setPayments(JSON.parse(storedPayments));
-      } catch (error) {
-        console.error("Error loading payments:", error);
-      }
-    }
+        const [paymentsRes, accountsRes, creditorsRes] = await Promise.all([
+          fetch('/payments'),
+          fetch('/accounts'),
+          fetch('/creditors')
+        ]);
 
-    if (storedAccounts) {
-      try {
-        setAccounts(JSON.parse(storedAccounts));
-      } catch (error) {
-        console.error("Error loading accounts:", error);
-      }
-    }
+        if (paymentsRes.ok) {
+          const paymentsData = await paymentsRes.json();
+          setPayments(paymentsData);
+        }
 
-    if (storedCreditors) {
-      try {
-        setCreditors(JSON.parse(storedCreditors));
+        if (accountsRes.ok) {
+          const accountsData = await accountsRes.json();
+          const mappedAccounts: Account[] = accountsData.map((a: any) => ({
+            id: String(a.id),
+            name: a.name,
+            number: a.number,
+            initialBalance: Number(a.initial_balance ?? a.initialBalance ?? 0),
+            currentBalance: Number(
+              a.current_balance ??
+                a.currentBalance ??
+                a.initial_balance ??
+                a.initialBalance ??
+                0
+            ),
+            createdAt: a.created_at ?? a.createdAt ?? new Date().toISOString(),
+          }));
+          setAccounts(mappedAccounts);
+        }
+
+        if (creditorsRes.ok) {
+          const creditorsData = await creditorsRes.json();
+          setCreditors(creditorsData);
+        }
       } catch (error) {
-        console.error("Error loading creditors:", error);
+        console.error("Error loading data:", error);
+        toast({
+          title: "Erro",
+          description: "Erro ao carregar dados.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
       }
-    }
+    };
+
+    fetchData();
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem(PAYMENTS_KEY, JSON.stringify(payments));
-  }, [payments]);
-
-  const handleAddPayment = (payment: Payment) => {
+  const handleAddPayment = async (payment: any) => {
+    // Payment is now created directly in PaymentForm, just add to state
     setPayments((prev) => [payment, ...prev]);
   };
 
-  const handleDeletePayment = (id: string) => {
-    setPayments((prev) => prev.filter((p) => p.id !== id));
-    toast({
-      title: "Pagamento excluído",
-      description: "O pagamento foi removido com sucesso.",
-      variant: "destructive",
-    });
+  const handleDeletePayment = async (id: string) => {
+    try {
+      const response = await fetch(`/payments/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setPayments((prev) => prev.filter((p) => p.id !== id));
+        toast({
+          title: "Pagamento excluído",
+          description: "O pagamento foi removido com sucesso.",
+          variant: "destructive",
+        });
+      } else {
+        throw new Error('Failed to delete payment');
+      }
+    } catch (error) {
+      console.error("Error deleting payment:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir pagamento.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleUpdateAccount = (accountId: string, newBalance: number) => {
-    setAccounts((prev) => {
-      const updated = prev.map((account) =>
-        account.id === accountId
-          ? { ...account, currentBalance: newBalance }
-          : account
-      );
-      localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(updated));
-      return updated;
-    });
+  const handleUpdateAccount = async (accountId: string, newBalance: number) => {
+    try {
+      const response = await fetch(`/accounts/${accountId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          current_balance: newBalance.toString(),
+        }),
+      });
+
+      if (response.ok) {
+        const updatedAccount = await response.json();
+        const mappedAccount: Account = {
+          id: String(updatedAccount.id),
+          name: updatedAccount.name,
+          number: updatedAccount.number,
+          initialBalance: Number(updatedAccount.initial_balance ?? updatedAccount.initialBalance ?? 0),
+          currentBalance: Number(
+            updatedAccount.current_balance ??
+              updatedAccount.currentBalance ??
+              updatedAccount.initial_balance ??
+              updatedAccount.initialBalance ??
+              0
+          ),
+          createdAt: updatedAccount.created_at ?? updatedAccount.createdAt ?? new Date().toISOString(),
+        };
+        setAccounts((prev) => prev.map((account) =>
+          account.id === accountId ? mappedAccount : account
+        ));
+      } else {
+        throw new Error('Failed to update account');
+      }
+    } catch (error) {
+      console.error("Error updating account:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar saldo da conta.",
+        variant: "destructive",
+      });
+    }
   };
+
+  if (loading) {
+    return (
+      <AppLayout>
+        <div className="flex justify-center items-center h-64">
+          <div className="text-lg">Carregando...</div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>

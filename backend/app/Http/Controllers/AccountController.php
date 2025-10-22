@@ -74,18 +74,29 @@ class AccountController extends Controller
      */
     public function update(Request $request, Account $account)
     {
-        //
         $request->validate([
-            'number' => 'required|unique:accounts,number,' . $account->id,
-            'name' => 'required|string|max:255',
-            'initial_balance' => 'required|numeric|min:0',
+            'number' => 'sometimes|required|unique:accounts,number,' . $account->id,
+            'name' => 'sometimes|required|string|max:255',
+            'initial_balance' => 'sometimes|required|numeric|min:0',
+            'current_balance' => 'sometimes|required|numeric',
         ]);
 
-        $account->number = $request->input('number');
-        $account->name = $request->input('name');
-        $account->initial_balance = $request->input('initial_balance');
-        $account->current_balance = $request->input('initial_balance');
+        if ($request->has('number')) {
+            $account->number = $request->input('number');
+        }
+        if ($request->has('name')) {
+            $account->name = $request->input('name');
+        }
+        if ($request->has('initial_balance')) {
+            $account->initial_balance = $request->input('initial_balance');
+            $account->current_balance = $request->input('initial_balance');
+        }
+        if ($request->has('current_balance')) {
+            $account->current_balance = $request->input('current_balance');
+        }
         $account->save();
+
+        return response()->json($account);
     }
 
     /**

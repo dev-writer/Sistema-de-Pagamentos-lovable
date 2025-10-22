@@ -13,11 +13,9 @@ return new class extends Migration
     {
     Schema::create('creditors', function (Blueprint $table) {
     $table->id();
-    $table->string('name');
-    $table->string('cpf_cnpj')->unique();
-    // $table->string('email')->nullable();
-    $table->decimal('total_amount_owed', 15, 2)->default(0);
-    $table->timestamps();
+            $table->string('name');
+            $table->string('document')->nullable();
+            $table->timestamps();
 });
 
     }

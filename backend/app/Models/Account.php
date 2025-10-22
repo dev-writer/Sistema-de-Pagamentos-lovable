@@ -15,8 +15,8 @@ class Account extends Model
         'current_balance',
     ];
 
-    // protected $casts = [
-    //     'initial_balance' => 'decimal:2',
-    //     'current_balance' => 'decimal:2',
-    // ];
+    protected $casts = [
+        'initial_balance' => 'decimal:2',
+        'current_balance' => 'decimal:2',
+    ];
 }
