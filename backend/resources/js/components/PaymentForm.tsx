@@ -74,10 +74,10 @@ export function PaymentForm({ onSubmit, accounts, creditors, onUpdateAccount }: 
       return;
     }
 
-    if ((selectedAccount.currentBalance || 0) < netAmount) {
+    if ((selectedAccount.current_balance || 0) < netAmount) {
       toast({
         title: "Saldo insuficiente",
-        description: `A conta não possui saldo suficiente. Saldo atual: R$ ${(selectedAccount.currentBalance || 0).toFixed(2)}`,
+        description: `A conta não possui saldo suficiente. Saldo atual: R$ ${(selectedAccount.current_balance || 0).toFixed(2)}`,
         variant: "destructive",
       });
       return;
@@ -107,7 +107,7 @@ export function PaymentForm({ onSubmit, accounts, creditors, onUpdateAccount }: 
       if (response.ok) {
         const newPayment = await response.json();
         onSubmit(newPayment);
-        onUpdateAccount(data.accountId, (selectedAccount.currentBalance || 0) - netAmount);
+        onUpdateAccount(data.accountId, (selectedAccount.current_balance || 0) - netAmount);
         reset({
           date: new Date().toISOString().split("T")[0],
           accountId: "",
@@ -177,7 +177,7 @@ export function PaymentForm({ onSubmit, accounts, creditors, onUpdateAccount }: 
                     accounts.map((account) => (
                       <SelectItem key={account.id} value={String(account.id)}>
                         {account.number} - {account.name} (Saldo: R${" "}
-                        {account.currentBalance?.toFixed(2) || "0.00"})
+                        {account.current_balance?.toFixed(2) || "0.00"})
                       </SelectItem>
                     ))
                   )}

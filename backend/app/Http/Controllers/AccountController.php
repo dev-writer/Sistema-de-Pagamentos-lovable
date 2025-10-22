@@ -11,7 +11,7 @@ class AccountController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+    public function index()
     {
         $accounts = Account::orderBy('created_at', 'desc')->get();
         return response()->json($accounts);
@@ -50,10 +50,12 @@ class AccountController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Account $accounts, $id)
+    public function show($id)
     {
-        $accounts = Account::with('Accounts')->findOrFail($id);
-            return Inertia::render('/Accounts', compact('accounts'));
+        $account = Account::findOrFail($id);
+            return Inertia::render('DashboardAccount', [
+                'account' => $account,
+            ]);
 
     }
 

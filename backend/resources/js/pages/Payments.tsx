@@ -115,8 +115,8 @@ const Payments = () => {
           id: String(updatedAccount.id),
           name: updatedAccount.name,
           number: updatedAccount.number,
-          initialBalance: Number(updatedAccount.initial_balance ?? updatedAccount.initialBalance ?? 0),
-          currentBalance: Number(
+          initial_balance: Number(updatedAccount.initial_balance ?? updatedAccount.initialBalance ?? 0),
+          current_balance: Number(
             updatedAccount.current_balance ??
               updatedAccount.currentBalance ??
               updatedAccount.initial_balance ??

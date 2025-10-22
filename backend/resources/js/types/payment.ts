@@ -3,6 +3,8 @@ export interface Payment {
   date: string;
   accountId: string;
   creditorId: string;
+  amount: number;
+  description: string;
   grossAmount: number;
   taxRate: number;
   taxAmount: number;

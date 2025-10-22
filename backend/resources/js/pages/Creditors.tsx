@@ -32,7 +32,7 @@ const Creditors = () => {
   } = useForm<CreditorFormData>({
     defaultValues: {
       name: "",
-      cpf_cnpj: "",
+      document: "",
     },
   });
 
@@ -87,7 +87,7 @@ const Creditors = () => {
   const onSubmit = async (data: CreditorFormData) => {
     const payload = {
       name: data.name,
-      cpf_cnpj: data.cpf_cnpj || null,
+      document: data.document || null,
     };
 
     try {
@@ -119,7 +119,7 @@ const Creditors = () => {
       const creditor: Creditor = {
         id: String(saved.id ?? Date.now()),
         name: saved.name,
-        cpf_cnpj: saved.cpf_cnpj ?? data.cpf_cnpj ?? "",
+        document: saved.document ?? data.document ?? "",
         createdAt: saved.created_at ?? new Date().toISOString(),
       };
 
@@ -205,15 +205,15 @@ const Creditors = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="cpf_cnpj">CPF/CNPJ</Label>
+                  <Label htmlFor="document">CPF/CNPJ</Label>
                   <input
-                    id="cpf_cnpj"
+                    id="document"
                     placeholder="Ex: 123.456.789-00"
-                    {...register("cpf_cnpj")}
+                    {...register("document")}
                     className="transition-smooth w-full px-3 py-2 rounded border bg-transparent"
                   />
-                  {errors.cpf_cnpj && (
-                    <p className="text-sm text-destructive">{errors.cpf_cnpj.message}</p>
+                  {errors.document && (
+                    <p className="text-sm text-destructive">{errors.document.message}</p>
                   )}
                 </div>
               </div>
@@ -254,15 +254,13 @@ const Creditors = () => {
                     {creditors.map((creditor) => (
                       <TableRow key={creditor.id}>
                         <TableCell className="font-medium">{creditor.name}</TableCell>
-                        <TableCell>{creditor.cpf_cnpj}</TableCell>
+                        <TableCell>{creditor.document}</TableCell>
                         <TableCell>
                           <div className="flex gap-1">
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() =>
-                                (window as any).navigate?.(`/creditor-dashboard/${creditor.id}`)
-                              }
+                              onClick={() => navigate(`/dashboard/creditor/${creditor.id}`)}
                               className="text-primary hover:text-primary hover:bg-primary/10"
                               title="Ver Dashboard"
                             >

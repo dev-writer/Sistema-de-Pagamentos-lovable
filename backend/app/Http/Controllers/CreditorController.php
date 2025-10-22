@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Creditor;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 
     /**
@@ -48,9 +49,12 @@ use Illuminate\Http\Request;
     /**
      * Display the specified resource.
      */
-    public function show(Creditor $creditor)
+    public function show($id)
     {
-        //
+        $creditor = Creditor::findOrFail($id);
+            return Inertia::render('DashboardCreditor', [
+                'creditor' => $creditor,
+            ]);
     }
 
     /**
