@@ -1,0 +1,7 @@
+- [x] Fix table name in AccountTransfer model from 'accounts_transfer' to 'account_transfers'
+- [x] Update Transfer interface in transaction.ts to use string for fromAccountId and toAccountId
+- [x] Fix error handling in AccountTransfers.tsx for 422 status to display validation errors
+- [x] Update mapping in AccountTransfers.tsx to use String for fromAccountId and toAccountId
+- [x] Update getAccountName function to accept string accountId
+- [x] Remove invalid middleware call from AccountTransferController constructor
+- [x] Test the transfer functionality after fixes - Server running, migrations up to date

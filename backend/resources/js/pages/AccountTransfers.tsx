@@ -134,8 +134,12 @@ const AccountTransfers = () => {
 
       if (res.status === 422) {
         const body = await res.json();
-        const first = body?.errors ? Object.values(body.errors)[0][0] : "Erro de validação";
-        toast({ title: "Erro de validação", description: first, variant: "destructive" });
+        const errorMessage = body.message || 'Erro de validação.';
+        toast({
+          title: "Erro de Validação",
+          description: errorMessage,
+          variant: "destructive",
+        });
         return;
       }
 

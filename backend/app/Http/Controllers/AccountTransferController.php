@@ -9,10 +9,7 @@ use Illuminate\Support\Facades\DB;
 
 class AccountTransferController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('web');
-    }
+    //
     /**
      * Display a listing of the resource.
      */

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AccountTransfer extends Model
 {
-    protected $table = 'accounts_transfer';
+    protected $table = 'account_transfers';
     
     protected $fillable = [
         'from_account_id',

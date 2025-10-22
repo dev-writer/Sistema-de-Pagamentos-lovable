@@ -1,0 +1,6 @@
+- [ ] Update Payment model to include relationships and fillable fields for tax calculations
+- [ ] Update PaymentController store method to handle tax calculations and account balance updates
+- [ ] Update PaymentForm to send correct data structure to backend
+- [ ] Update Payment type to match backend fields
+- [ ] Update Payments.tsx to handle account balance updates properly
+- [ ] Test payment registration functionality

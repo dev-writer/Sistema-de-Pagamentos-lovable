@@ -12,8 +12,8 @@ class PaymentController extends Controller
      */
     public function index()
     {
-        //
-        
+        $payments = Payment::with(['account', 'creditor'])->orderBy('created_at', 'desc')->get();
+        return response()->json($payments);
     }
 
     /**
@@ -29,7 +29,31 @@ class PaymentController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $data = $request->validate([
+            'account_id' => 'required|exists:accounts,id',
+            'creditor_id' => 'required|exists:creditors,id',
+            'amount' => 'required|numeric|min:0',
+            'gross_amount' => 'sometimes|numeric|min:0',
+            'tax_rate' => 'sometimes|numeric|min:0|max:100',
+            'tax_amount' => 'sometimes|numeric|min:0',
+            'net_amount' => 'sometimes|numeric|min:0',
+            'payment_date' => 'required|date',
+            'status' => 'sometimes|string|in:pending,completed,failed',
+        ]);
+
+        // Use net_amount as the main amount if provided, otherwise use amount
+        $data['amount'] = $data['net_amount'] ?? $data['amount'];
+
+        $payment = Payment::create($data);
+
+        // Update account balance
+        $account = $payment->account;
+        if ($account) {
+            $account->current_balance -= $payment->amount;
+            $account->save();
+        }
+
+        return response()->json($payment->load(['account', 'creditor']), 201);
     }
 
     /**
@@ -61,6 +85,7 @@ class PaymentController extends Controller
      */
     public function destroy(Payment $payment)
     {
-        //
+        $payment->delete();
+        return response()->json(['message' => 'Pagamento removido com sucesso.'], 200);
     }
 }

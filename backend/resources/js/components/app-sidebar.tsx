@@ -37,19 +37,19 @@ const mainNavItems: NavItem[] = [
 
     {
         title: 'Pagamentos',
-        href: '/payments',
+        href: '/pagamentos',
         icon: CreditCard,
     },
 
     {
         title: 'Transferências',
-        href: '/accounttransfers',
+        href: '/transferencias',
         icon: Banknote,
     },
 
     {
-        title: 'Relatório de pagamentos',
-        href: '/paymentsreports',
+        title: 'Relatório de Pagamentos',
+        href: '/pagamentos/relatorio',
         icon: ClipboardListIcon,
     }
 ];

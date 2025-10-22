@@ -14,7 +14,21 @@ class Payment extends Model
         'amount',
         'payment_date',
         'status',
+        'gross_amount',
+        'tax_rate',
+        'tax_amount',
+        'net_amount',
     ];
+
+    public function account()
+    {
+        return $this->belongsTo(Account::class);
+    }
+
+    public function creditor()
+    {
+        return $this->belongsTo(Creditor::class);
+    }
 
     
 }
