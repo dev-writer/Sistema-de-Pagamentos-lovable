@@ -115,8 +115,8 @@ const Dashboard = () => {
     return null;
   }
 
-  const initialBalance = parseFloat((account.initial_balance ?? account.initial_balance ?? 0) as any) || 0;
-  const currentBalance = parseFloat((account.current_balance ?? account.current_balance ?? initialBalance) as any) || 0;
+  const initial_balance = parseFloat((account.initial_balance ?? account.initial_balance ?? 0) as any) || 0;
+  const current_balance = parseFloat((account.current_balance ?? account.current_balance ?? initial_balance) as any) || 0;
 
   return (
     <AppLayout>
@@ -137,8 +137,8 @@ const Dashboard = () => {
               <CardTitle>Saldo Atual</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-semibold">R$ {currentBalance.toFixed(2)}</div>
-              <p className="text-sm text-muted-foreground mt-1">Saldo inicial: R$ {initialBalance.toFixed(2)}</p>
+              <div className="text-2xl font-semibold">R$ {current_balance.toFixed(2)}</div>
+              <p className="text-sm text-muted-foreground mt-1">Saldo inicial: R$ {initial_balance.toFixed(2)}</p>
             </CardContent>
           </Card>
 

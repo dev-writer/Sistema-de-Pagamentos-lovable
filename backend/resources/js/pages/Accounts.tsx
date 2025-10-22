@@ -51,8 +51,8 @@ const Accounts = () => {
             id: String(a.id),
             number: a.number,
             name: a.name,
-            initialBalance: parseFloat(a.initial_balance ?? a.initialBalance ?? 0),
-            currentBalance: parseFloat(a.current_balance ?? a.currentBalance ?? a.initial_balance ?? 0),
+            initial_balance: parseFloat(a.initial_balance ?? a.initial_balance ?? 0),
+            current_balance: parseFloat(a.current_balance ?? a.current_balance ?? a.initial_balance ?? 0),
             createdAt: a.created_at ?? new Date().toISOString(),
           }));
           setAccounts(list);
@@ -121,9 +121,9 @@ const Accounts = () => {
         id: String(saved.id ?? Date.now()),
         number: saved.number,
         name: saved.name,
-        initialBalance:
+        initial_balance:
           parseFloat(saved.initial_balance) ?? parseFloat(data.initialBalance || "0"),
-        currentBalance:
+        current_balance:
           parseFloat(saved.current_balance) ?? parseFloat(data.initialBalance || "0"),
         createdAt: saved.created_at ?? new Date().toISOString(),
       };
@@ -170,7 +170,6 @@ const Accounts = () => {
       console.error("Delete error:", error);
       toast({
         title: "Erro",
-        description: error.message || "Não foi possível excluir a conta",
         variant: "destructive",
       });
     }
@@ -272,9 +271,9 @@ const Accounts = () => {
                       <TableRow key={account.id}>
                         <TableCell className="font-medium">{account.number}</TableCell>
                         <TableCell>{account.name}</TableCell>
-                        <TableCell>R$ {account.initialBalance.toFixed(2)}</TableCell>
+                        <TableCell>R$ {account.initial_balance.toFixed(2)}</TableCell>
                         <TableCell className="font-semibold">
-                          R$ {account.currentBalance.toFixed(2)}
+                          R$ {account.current_balance.toFixed(2)}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">

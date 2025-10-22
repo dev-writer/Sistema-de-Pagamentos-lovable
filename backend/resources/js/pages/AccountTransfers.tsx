@@ -46,12 +46,12 @@ const AccountTransfers = () => {
         id: String(a.id),
         name: a.name,
         number: a.number,
-        initialBalance: Number(a.initial_balance ?? a.initialBalance ?? 0),
-        currentBalance: Number(
+        initial_balance: Number(a.initial_balance ?? a.initial_balance ?? 0),
+        current_balance: Number(
           a.current_balance ??
-            a.currentBalance ??
+            a.current_balance ??
             a.initial_balance ??
-            a.initialBalance ??
+            a.initial_balance ??
             0
         ),
         createdAt: a.created_at ?? a.createdAt ?? new Date().toISOString(),
@@ -251,7 +251,7 @@ const AccountTransfers = () => {
                     <SelectContent>
                       {accounts.map((account) => (
                         <SelectItem key={account.id} value={account.id}>
-                          {account.name} - R$ {account.currentBalance?.toFixed(2) ?? '0.00'}
+                          {account.name} - R$ {account.current_balance?.toFixed(2) ?? '0.00'}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -267,7 +267,7 @@ const AccountTransfers = () => {
                     <SelectContent>
                       {accounts.map((account) => (
                         <SelectItem key={account.id} value={account.id}>
-                          {account.name} - R$ {account.currentBalance?.toFixed(2) ?? '0.00'}
+                          {account.name} - R$ {account.current_balance?.toFixed(2) ?? '0.00'}
                         </SelectItem>
                       ))}
                     </SelectContent>

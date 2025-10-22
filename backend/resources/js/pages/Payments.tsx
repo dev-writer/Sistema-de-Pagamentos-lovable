@@ -34,12 +34,12 @@ const Payments = () => {
             id: String(a.id),
             name: a.name,
             number: a.number,
-            initialBalance: Number(a.initial_balance ?? a.initialBalance ?? 0),
-            currentBalance: Number(
+            initial_balance: Number(a.initial_balance ?? a.initial_balance ?? 0),
+            current_balance: Number(
               a.current_balance ??
-                a.currentBalance ??
+                a.current_balance ??
                 a.initial_balance ??
-                a.initialBalance ??
+                a.initial_balance ??
                 0
             ),
             createdAt: a.created_at ?? a.createdAt ?? new Date().toISOString(),
@@ -115,12 +115,12 @@ const Payments = () => {
           id: String(updatedAccount.id),
           name: updatedAccount.name,
           number: updatedAccount.number,
-          initial_balance: Number(updatedAccount.initial_balance ?? updatedAccount.initialBalance ?? 0),
+          initial_balance: Number(updatedAccount.initial_balance ?? updatedAccount.initial_balance ?? 0),
           current_balance: Number(
             updatedAccount.current_balance ??
-              updatedAccount.currentBalance ??
+              updatedAccount.current_balance ??
               updatedAccount.initial_balance ??
-              updatedAccount.initialBalance ??
+              updatedAccount.initial_balance ??
               0
           ),
           createdAt: updatedAccount.created_at ?? updatedAccount.createdAt ?? new Date().toISOString(),
