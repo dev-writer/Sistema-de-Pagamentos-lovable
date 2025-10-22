@@ -33,12 +33,12 @@ use Inertia\Inertia;
     public function store(Request $request)
     {
          $data = $request->validate([
-            'cpf_cnpj' => 'required|string|max:255|unique:creditors,cpf_cnpj',
+            'document' => 'required|string|max:255|unique:creditors,document',
             'name' => 'required|string|max:255',
         ]);
         
         $creditors = Creditor::create([
-            'cpf_cnpj' => $data['cpf_cnpj'],
+            'document' => $data['document'],
             'name' => $data['name'],
             'total_amount_owed' => 0,
         ]);
@@ -70,7 +70,7 @@ use Inertia\Inertia;
      */
     public function update(Request $request, Creditor $creditor)
     {
-         $document->validate([
+         $request->validate([
             'document' => 'required|unique:creditors,document,' . $creditor->id,
             'name' => 'required|string|max:255',
             'total_amount_owed' => 'required|numeric|min:0',
