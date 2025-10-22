@@ -23,16 +23,15 @@ route::get('/transferencias', function () {
 route::get('/contas', function () {
     return Inertia::render('Accounts');
 });
-route::get('/dashboardcredor', function () {
-    return Inertia::render('CreditorDashboard');
-});
+
+route::get('/dashboard/creditor/{id}', [CreditorController::class, 'show'])->name('dashboardcreditor.show');
+
 route::get('/credores', function () {
     return Inertia::render('Creditors');
 });
 
-route::get('/dashboardcontas', function () {
-    return Inertia::render('Dashboard copy');
-});
+route::get('/dashboard/account/{id}', [AccountController::class, 'show'])->name('dashboardaccount.show');
+
 route::get('/pagamentos', function () {
     return Inertia::render('Payments');
 });

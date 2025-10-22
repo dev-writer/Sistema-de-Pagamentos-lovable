@@ -43,7 +43,7 @@ const mainNavItems: NavItem[] = [
 
     {
         title: 'Transferências',
-        href: '/accounttransfers',
+        href: '/transferencias',
         icon: Banknote,
     },
 

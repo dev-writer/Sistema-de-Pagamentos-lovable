@@ -281,7 +281,7 @@ const Accounts = () => {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => navigate(`/dashboard/${account.id}`)}
+                              onClick={() => navigate(`/dashboard/account/${account.id}`)}
                               className="text-primary hover:text-primary hover:bg-primary/10"
                               title="Ver dashboard"
                             >

@@ -44,6 +44,11 @@
         @viteReactRefresh
         @vite(['resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])
         @inertiaHead
+         @if(app()->environment('local'))
+            @vite('resources/js/app.tsx')
+        @else
+            @vite('resources/js/app.tsx')
+        @endif
     </head>
     <body class="font-sans antialiased">
         @inertia

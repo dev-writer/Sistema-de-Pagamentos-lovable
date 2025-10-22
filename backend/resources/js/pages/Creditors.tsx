@@ -252,7 +252,7 @@ const Creditors = () => {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => navigate(`/creditor-dashboard/${creditor.id}`)}
+                              onClick={() => navigate(`/dashboard/creditor/${creditor.id}`)}
                               className="text-primary hover:text-primary hover:bg-primary/10"
                               title="Ver Dashboard"
                             >
