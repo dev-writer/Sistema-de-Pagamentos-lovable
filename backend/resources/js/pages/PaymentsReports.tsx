@@ -19,6 +19,10 @@ const PaymentsReports = () => {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [creditors, setCreditors] = useState<Creditor[]>([]);
 
+  const getCsrfToken = () =>
+    (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement | null)
+      ?.content || "";
+
   const [selectedAccount, setSelectedAccount] = useState<string>("all");
   const [selectedCreditor, setSelectedCreditor] = useState<string>("all");
   const [startDate, setStartDate] = useState<Date | undefined>();
@@ -73,7 +77,13 @@ const PaymentsReports = () => {
 
         if (creditorsRes.ok) {
           const creditorsData = await creditorsRes.json();
-          setCreditors(creditorsData);
+          const mappedCreditors: Creditor[] = creditorsData.map((c: any) => ({
+            id: String(c.id),
+            name: c.name,
+            document: c.document ?? "",
+            createdAt: c.created_at ?? new Date().toISOString(),
+          }));
+          setCreditors(mappedCreditors);
         }
       } catch (error) {
         console.error("Error loading data:", error);
@@ -114,6 +124,10 @@ const PaymentsReports = () => {
     try {
       const response = await fetch(`/payments/${id}`, {
         method: 'DELETE',
+        headers: {
+          'X-CSRF-TOKEN': getCsrfToken(),
+          'X-Requested-With': 'XMLHttpRequest',
+        },
       });
 
       if (response.ok) {

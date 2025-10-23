@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Creditor;
+use App\Models\Payment;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -52,9 +53,12 @@ use Inertia\Inertia;
     public function show($id)
     {
         $creditor = Creditor::findOrFail($id);
-            return Inertia::render('DashboardCreditor', [
-                'creditor' => $creditor,
-            ]);
+        $payments = Payment::with(['account'])->where('creditor_id', $id)->orderBy('payment_date', 'desc')->get();
+
+        return Inertia::render('DashboardCreditor', [
+            'creditor' => $creditor,
+            'payments' => $payments,
+        ]);
     }
 
     /**

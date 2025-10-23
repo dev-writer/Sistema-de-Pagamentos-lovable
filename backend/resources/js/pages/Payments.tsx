@@ -14,6 +14,10 @@ const Payments = () => {
   const [creditors, setCreditors] = useState<Creditor[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const getCsrfToken = () =>
+    (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement | null)
+      ?.content || "";
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -25,7 +29,22 @@ const Payments = () => {
 
         if (paymentsRes.ok) {
           const paymentsData = await paymentsRes.json();
-          setPayments(paymentsData);
+          const mappedPayments: Payment[] = paymentsData.map((p: any) => ({
+            id: String(p.id),
+            date: p.payment_date ?? p.date ?? new Date().toISOString().split('T')[0],
+            accountId: String(p.account_id ?? p.accountId),
+            creditorId: String(p.creditor_id ?? p.creditorId),
+            amount: Number(p.amount ?? 0),
+            description: p.description ?? "",
+            grossAmount: Number(p.gross_amount ?? p.grossAmount ?? 0),
+            taxRate: Number(p.tax_rate ?? p.taxRate ?? 0),
+            taxAmount: Number(p.tax_amount ?? p.taxAmount ?? 0),
+            netAmount: Number(p.net_amount ?? p.netAmount ?? 0),
+            created_at: p.created_at ?? new Date().toISOString(),
+            updated_at: p.updated_at ?? new Date().toISOString(),
+            createdAt: p.created_at ?? new Date().toISOString(),
+          }));
+          setPayments(mappedPayments);
         }
 
         if (accountsRes.ok) {
@@ -49,7 +68,13 @@ const Payments = () => {
 
         if (creditorsRes.ok) {
           const creditorsData = await creditorsRes.json();
-          setCreditors(creditorsData);
+          const mappedCreditors: Creditor[] = creditorsData.map((c: any) => ({
+            id: String(c.id),
+            name: c.name,
+            document: c.document ?? "",
+            createdAt: c.created_at ?? new Date().toISOString(),
+          }));
+          setCreditors(mappedCreditors);
         }
       } catch (error) {
         console.error("Error loading data:", error);
@@ -75,6 +100,10 @@ const Payments = () => {
     try {
       const response = await fetch(`/payments/${id}`, {
         method: 'DELETE',
+        headers: {
+          'X-CSRF-TOKEN': getCsrfToken(),
+          'X-Requested-With': 'XMLHttpRequest',
+        },
       });
 
       if (response.ok) {
@@ -103,6 +132,8 @@ const Payments = () => {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': getCsrfToken(),
+          'X-Requested-With': 'XMLHttpRequest',
         },
         body: JSON.stringify({
           current_balance: newBalance.toString(),

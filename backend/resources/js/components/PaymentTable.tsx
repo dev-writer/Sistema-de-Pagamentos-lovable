@@ -78,13 +78,13 @@ export function PaymentTable({ payments, accounts, creditors, onDelete }: Paymen
                     </TableCell>
                     <TableCell>{getAccountInfo(payment.accountId)}</TableCell>
                     <TableCell>{getCreditorInfo(payment.creditorId)}</TableCell>
-                    <TableCell className="text-right">R$ {payment.grossAmount.toFixed(2)}</TableCell>
-                    <TableCell className="text-right">{payment.taxRate.toFixed(2)}%</TableCell>
+                    <TableCell className="text-right">R$ {(payment.grossAmount || 0).toFixed(2)}</TableCell>
+                    <TableCell className="text-right">{(payment.taxRate || 0).toFixed(2)}%</TableCell>
                     <TableCell className="text-right text-destructive">
-                      R$ {payment.taxAmount.toFixed(2)}
+                      R$ {(payment.taxAmount || 0).toFixed(2)}
                     </TableCell>
                     <TableCell className="text-right font-semibold text-primary">
-                      R$ {payment.netAmount.toFixed(2)}
+                      R$ {(payment.netAmount || 0).toFixed(2)}
                     </TableCell>
                     <TableCell>
                       <Button

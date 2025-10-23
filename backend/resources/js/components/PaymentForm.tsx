@@ -100,6 +100,7 @@ export function PaymentForm({ onSubmit, accounts, creditors, onUpdateAccount }: 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
         },
         body: JSON.stringify(paymentData),
       });
@@ -121,10 +122,18 @@ export function PaymentForm({ onSubmit, accounts, creditors, onUpdateAccount }: 
           description: "O pagamento foi adicionado com sucesso e o saldo foi atualizado.",
         });
       } else {
-        const errorData = await response.json();
+        const errorText = await response.text();
+        let errorMessage = "Erro ao registrar pagamento.";
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.message || errorMessage;
+        } catch (e) {
+          // If not JSON, use the text as is
+          errorMessage = errorText || errorMessage;
+        }
         toast({
           title: "Erro",
-          description: errorData.message || "Erro ao registrar pagamento.",
+          description: errorMessage,
           variant: "destructive",
         });
       }

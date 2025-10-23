@@ -66,7 +66,7 @@ class AccountController extends Controller
     {
         //
         // return view('accounts.edit', compact('account'));
-        
+
     }
 
     /**
@@ -79,6 +79,7 @@ class AccountController extends Controller
             'name' => 'sometimes|required|string|max:255',
             'initial_balance' => 'sometimes|required|numeric|min:0',
             'current_balance' => 'sometimes|required|numeric',
+            'add_balance' => 'sometimes|required|numeric|min:0.01',
         ]);
 
         if ($request->has('number')) {
@@ -90,6 +91,9 @@ class AccountController extends Controller
         if ($request->has('initial_balance')) {
             $account->initial_balance = $request->input('initial_balance');
             $account->current_balance = $request->input('initial_balance');
+        }
+        if ($request->has('add_balance')) {
+            $account->current_balance += $request->input('add_balance');
         }
         if ($request->has('current_balance')) {
             $account->current_balance = $request->input('current_balance');

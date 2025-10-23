@@ -17,6 +17,7 @@ const ACCOUNTS_KEY = "accounts";
 const CreditorDashboard = () => {
   const { props } = usePage();
   const serverCreditor = (props as any).creditor as Creditor | undefined;
+  const serverPayments = (props as any).payments as Payment[] | undefined;
 
   const goBack = () => window.location.href = "/credores";
 
@@ -39,8 +40,9 @@ const CreditorDashboard = () => {
     if (storedAccounts) setAccounts(JSON.parse(storedAccounts));
   }, []);
 
- 
+
   const creditor = serverCreditor ?? creditors.find((c) => c.id === creditorId);
+  const creditorPayments = serverPayments ?? payments.filter((p) => p.creditorId === creditor?.id);
 
   useEffect(() => {
     if ((creditors.length > 0 || serverCreditor === undefined) && !creditor) {
@@ -56,14 +58,20 @@ const CreditorDashboard = () => {
 
   if (!creditor) return null;
 
-  const creditorPayments = payments.filter((p) => p.creditorId === creditor.id);
-  const totalReceived = creditorPayments.reduce((sum, p) => sum + (p.netAmount ?? 0), 0);
-  const totalGross = creditorPayments.reduce((sum, p) => sum + (p.grossAmount ?? 0), 0);
-  const totalTax = creditorPayments.reduce((sum, p) => sum + (p.taxAmount ?? 0), 0);
+  const totalReceived = creditorPayments.reduce((sum, p) => sum + parseFloat((p as any).net_amount ?? (p as any).netAmount ?? 0), 0);
+  const totalGross = creditorPayments.reduce((sum, p) => sum + parseFloat((p as any).gross_amount ?? (p as any).grossAmount ?? 0), 0);
+  const totalTax = creditorPayments.reduce((sum, p) => sum + parseFloat((p as any).tax_amount ?? (p as any).taxAmount ?? 0), 0);
 
   const getAccountInfo = (accountId: string) => {
     const account = accounts.find((a) => a.id === accountId);
     return account ? `${account.number} - ${account.name}` : "Conta desconhecida";
+  };
+
+  const getAccountInfoFromPayment = (payment: Payment) => {
+    if ((payment as any).account) {
+      return `${(payment as any).account.number} - ${(payment as any).account.name}`;
+    }
+    return getAccountInfo(payment.accountId);
   };
 
   return (
@@ -133,11 +141,11 @@ const CreditorDashboard = () => {
                   <TableBody>
                     {creditorPayments.map((payment) => (
                       <TableRow key={payment.id}>
-                        <TableCell>{new Date(payment.date).toLocaleDateString('pt-BR')}</TableCell>
-                        <TableCell>{getAccountInfo(payment.accountId)}</TableCell>
-                        <TableCell className="text-right">R$ {(payment.grossAmount ?? 0).toFixed(2)}</TableCell>
-                        <TableCell className="text-right text-destructive">-{(payment.taxRate ?? 0)}% (R$ {(payment.taxAmount ?? 0).toFixed(2)})</TableCell>
-                        <TableCell className="text-right font-medium text-green-600">+R$ {(payment.netAmount ?? 0).toFixed(2)}</TableCell>
+                        <TableCell>{new Date((payment as any).payment_date || payment.date).toLocaleDateString('pt-BR')}</TableCell>
+                        <TableCell>{getAccountInfoFromPayment(payment)}</TableCell>
+                        <TableCell className="text-right">R$ {parseFloat((payment as any).gross_amount ?? (payment as any).grossAmount ?? 0).toFixed(2)}</TableCell>
+                        <TableCell className="text-right text-destructive">-{parseFloat((payment as any).tax_rate ?? (payment as any).taxRate ?? 0)}% (R$ {parseFloat((payment as any).tax_amount ?? (payment as any).taxAmount ?? 0).toFixed(2)})</TableCell>
+                        <TableCell className="text-right font-medium text-green-600">+R$ {parseFloat((payment as any).net_amount ?? (payment as any).netAmount ?? 0).toFixed(2)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
