@@ -32,6 +32,8 @@ route::get('/credores', function () {
 
 route::get('/dashboard/account/{id}', [AccountController::class, 'show'])->name('dashboardaccount.show');
 
+route::post('accounts/{id}/deposit', [AccountController::class, 'deposit'])->name('deposit');
+
 route::get('/pagamentos', function () {
     return Inertia::render('Payments');
 });

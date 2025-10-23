@@ -7,7 +7,6 @@ import { toast } from "@/hooks/use-toast";
 import { usePage } from "@inertiajs/react";
 import type { Account } from "@/types/account";
 import type { AccountTransaction } from "@/types/transaction";
-import type { Transfer } from "@/types/transaction";
 import type { Payment } from "@/types/payment";
 import type { Creditor } from "@/types/creditor";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -31,6 +30,14 @@ const Dashboard = () => {
   const [amount, setAmount] = useState<string>("");
   const [description, setDescription] = useState<string>("");
 
+  // localAccount mantém a conta exibida e permite atualização imediata após o POST
+  const [localAccount, setLocalAccount] = useState<Account | undefined>(serverAccount);
+
+  // sincroniza quando a página é carregada via Inertia (serverAccount pode mudar)
+  useEffect(() => {
+    setLocalAccount(serverAccount);
+  }, [serverAccount]);
+
   const accountId = serverAccount?.id ?? (() => {
     const m = window.location.pathname.match(/\/dashboard\/account\/([^\/]+)/);
     return m ? m[1] : undefined;
@@ -48,7 +55,8 @@ const Dashboard = () => {
     if (storedCreditors) setCreditors(JSON.parse(storedCreditors));
   }, []);
 
-  const account = serverAccount ?? accounts.find((a) => a.id === accountId);
+  // usa localAccount (se existir) — fallback para lista de accounts do localStorage/state
+  const account = localAccount ?? accounts.find((a) => String(a.id) === String(accountId));
 
   useEffect(() => {
     if (!account) {
@@ -62,7 +70,11 @@ const Dashboard = () => {
 
   }, [accountId]);
 
-  const handleAddBalance = () => {
+  const getCsrfToken = () =>
+    (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement | null)
+      ?.content || "";
+
+  const handleAddBalance = async () => {
     if (!accountId || !amount || parseFloat(amount) <= 0) {
       toast({
         title: "Erro",
@@ -72,35 +84,79 @@ const Dashboard = () => {
       return;
     }
 
-    const transaction: AccountTransaction = {
-      id: Date.now().toString(),
-      accountId: accountId!,
-      type: 'deposit',
-      amount: parseFloat(amount),
-      description: description || 'Depósito',
-      createdAt: new Date().toISOString(),
-    };
+    try {
+      const res = await fetch(`/accounts/${accountId}/deposit`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+          "X-CSRF-TOKEN": getCsrfToken(),
+        },
+        body: JSON.stringify({
+          amount: parseFloat(amount),
+          description: description || null,
+        }),
+      });
 
-    const updatedAccounts = accounts.map((acc) =>
-      acc.id === accountId
-        ? { ...acc, currentBalance: (acc.current_balance ?? acc.initial_balance ?? 0) + parseFloat(amount) }
-        : acc
-    );
+      if (res.status === 422) {
+        const json = await res.json();
+        const msgs = json.errors ? Object.values(json.errors).flat().join(" • ") : "Dados inválidos";
+        throw new Error(msgs);
+      }
 
-    const updatedTransactions = [transaction, ...transactions];
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || "Erro ao depositar");
+      }
 
-    setAccounts(updatedAccounts);
-    setTransactions(updatedTransactions);
-    localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(updatedAccounts));
-    localStorage.setItem(TRANSACTIONS_KEY, JSON.stringify(updatedTransactions));
+      // conta atualizada retornada pelo servidor
+      const updatedAccount = await res.json();
 
-    setAmount("");
-    setDescription("");
+      // atualiza a conta exibida imediatamente
+      setLocalAccount((prev) => {
+        // mescla fields retornados pelo servidor
+        return { ...(prev ?? {}), ...updatedAccount } as Account;
+      });
+      
+      // também atualiza o array de accounts usado como fallback
+      const updatedAccounts = accounts.map((acc) =>
+        String(acc.id) === String(accountId) ? { ...acc, ...updatedAccount } : acc
+      );
+      // se não existia na lista, adiciona
+      if (!updatedAccounts.find((a) => String(a.id) === String(accountId)) && updatedAccount?.id) {
+        updatedAccounts.unshift(updatedAccount as Account);
+      }
 
-    toast({
-      title: "Saldo adicionado!",
-      description: "O saldo foi atualizado com sucesso.",
-    });
+      const transaction: AccountTransaction = {
+        id: Date.now().toString(),
+        accountId: accountId!,
+        type: "deposit",
+        amount: parseFloat(amount),
+        description: description || "Depósito",
+        createdAt: new Date().toISOString(),
+      };
+
+      const updatedTransactions = [transaction, ...transactions];
+
+      setAccounts(updatedAccounts);
+      setTransactions(updatedTransactions);
+      localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(updatedAccounts));
+      localStorage.setItem(TRANSACTIONS_KEY, JSON.stringify(updatedTransactions));
+
+      setAmount("");
+      setDescription("");
+
+      toast({
+        title: "Saldo adicionado!",
+        description: "O saldo foi atualizado com sucesso.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: error.message || "Não foi possível adicionar saldo.",
+        variant: "destructive",
+      });
+    }
   };
 
   const accountTransactions = transactions.filter((t) => t.accountId === accountId);
@@ -115,8 +171,8 @@ const Dashboard = () => {
     return null;
   }
 
-  const initialBalance = parseFloat((account.initial_balance ?? account.initial_balance ?? 0) as any) || 0;
-  const currentBalance = parseFloat((account.current_balance ?? account.current_balance ?? initialBalance) as any) || 0;
+  const initial_balance = parseFloat((account.initial_balance ?? account.initial_balance ?? 0) as any) || 0;
+  const current_balance = parseFloat((account.current_balance ?? account.current_balance ?? initial_balance) as any) || 0;
 
   return (
     <AppLayout>
@@ -137,8 +193,8 @@ const Dashboard = () => {
               <CardTitle>Saldo Atual</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-semibold">R$ {currentBalance.toFixed(2)}</div>
-              <p className="text-sm text-muted-foreground mt-1">Saldo inicial: R$ {initialBalance.toFixed(2)}</p>
+              <div className="text-2xl font-semibold">R$ {current_balance.toFixed(2)}</div>
+              <p className="text-sm text-muted-foreground mt-1">Saldo inicial: R$ {initial_balance.toFixed(2)}</p>
             </CardContent>
           </Card>
 
@@ -255,4 +311,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-// ...existing code...

@@ -58,12 +58,12 @@ const PaymentsReports = () => {
             id: String(a.id),
             name: a.name,
             number: a.number,
-            initialBalance: Number(a.initial_balance ?? a.initialBalance ?? 0),
-            currentBalance: Number(
+            initial_balance: Number(a.initial_balance ?? a.initial_balance ?? 0),
+            current_balance: Number(
               a.current_balance ??
-                a.currentBalance ??
+                a.current_balance ??
                 a.initial_balance ??
-                a.initialBalance ??
+                a.initial_balance ??
                 0
             ),
             createdAt: a.created_at ?? a.createdAt ?? new Date().toISOString(),

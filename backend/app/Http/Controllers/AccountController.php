@@ -99,6 +99,7 @@ class AccountController extends Controller
         return response()->json($account);
     }
 
+
     /**
      * Remove the specified resource from storage.
      */
@@ -107,4 +108,20 @@ class AccountController extends Controller
         //
         $account->delete();
     }
+
+    public function deposit(Request $request, $id)
+    {
+        $data = $request->validate([
+            'amount' => 'required|numeric|min:0.01',
+            'description' => 'nullable|string|max:1000',
+        ]);
+
+        $account = Account::findOrFail($id);
+
+        $current = $account->current_balance ?? $account->initial_balance ?? 0;
+        $account->current_balance = $current + $data['amount'];
+        $account->save();
+            return response()->json($account);
+    }
+
 }

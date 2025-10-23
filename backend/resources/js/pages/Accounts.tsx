@@ -51,8 +51,8 @@ const Accounts = () => {
             id: String(a.id),
             number: a.number,
             name: a.name,
-            initialBalance: parseFloat(a.initial_balance ?? a.initialBalance ?? 0),
-            currentBalance: parseFloat(a.current_balance ?? a.currentBalance ?? a.initial_balance ?? 0),
+            initial_balance: parseFloat(a.initial_balance ?? a.initial_balance ?? 0),
+            current_balance: parseFloat(a.current_balance ?? a.current_balance ?? a.initial_balance ?? 0),
             createdAt: a.created_at ?? new Date().toISOString(),
           }));
           setAccounts(list);
@@ -124,7 +124,7 @@ const Accounts = () => {
         initial_balance:
           parseFloat(saved.initial_balance) ?? parseFloat(data.initialBalance || "0"),
         current_balance:
-          parseFloat(saved.current_balance) ?? parseFloat(data.currentBalance || "0"),
+          parseFloat(saved.current_balance) ?? parseFloat(data.initialBalance || "0"),
         createdAt: saved.created_at ?? new Date().toISOString(),
       };
 
@@ -170,7 +170,6 @@ const Accounts = () => {
       console.error("Delete error:", error);
       toast({
         title: "Erro",
-        description: error.message || "Não foi possível excluir a conta",
         variant: "destructive",
       });
     }

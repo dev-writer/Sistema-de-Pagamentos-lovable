@@ -1,7 +1,13 @@
-- [x] Fix table name in AccountTransfer model from 'accounts_transfer' to 'account_transfers'
-- [x] Update Transfer interface in transaction.ts to use string for fromAccountId and toAccountId
-- [x] Fix error handling in AccountTransfers.tsx for 422 status to display validation errors
-- [x] Update mapping in AccountTransfers.tsx to use String for fromAccountId and toAccountId
-- [x] Update getAccountName function to accept string accountId
-- [x] Remove invalid middleware call from AccountTransferController constructor
-- [x] Test the transfer functionality after fixes - Server running, migrations up to date
+# TODO: Corrigir Depósitos - Salvar no Banco de Dados
+
+## Problema
+Os depósitos de contas não são salvos no saldo no banco de dados. Só aparecem no histórico de depósitos no localStorage.
+
+## Solução
+Criar endpoint no backend para depositar dinheiro e atualizar o saldo no banco, e modificar o frontend para usar esse endpoint.
+
+## Tarefas
+- [x] Criar método `deposit` no AccountController
+- [x] Adicionar rota para o endpoint de depósito
+- [x] Modificar o frontend (DashboardAccount.tsx) para chamar o endpoint em vez de apenas atualizar localStorage
+- [ ] Testar a funcionalidade
